@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.9"
-# dependencies = ["python-docx>=1.1", "playwright>=1.45"]
+# dependencies = ["python-docx==1.2.0", "playwright==1.65.2"]
 # ///
 """
 build_cv.py - Convierte un CV en Markdown simple a DOCX, HTML y PDF de una columna (ATS-seguro).
 
-Uso (uv instala las dependencias solo; sin uv: pip install python-docx playwright):
+Uso (uv instala las dependencias solo; sin uv: pip install python-docx==1.2.0 playwright==1.65.2):
     uv run scripts/build_cv.py cv.md [--letter] [--sin-pdf] [--force]   # --letter: EE.UU./Canadá; por defecto A4
 Genera cv.docx, cv.html y cv.pdf junto al .md. El PDF se imprime con Chromium vía
 Playwright; si Chromium no está, se descarga una vez (~150 MB, sin permisos de admin).

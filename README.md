@@ -80,10 +80,10 @@ claude plugin validate .
 
 ## Publicar
 
-Cada commit en `main` llega a quienes activaron la actualización automática (el plugin no fija `version`, así que se sigue el commit). Para claude.ai, crea un tag:
+Las actualizaciones llegan a los usuarios cuando cambia `version` en `.claude-plugin/plugin.json`: súbela en cada release (formato `AAAA.MM.N`) y crea el tag correspondiente, que también genera el `.skill` para claude.ai:
 
 ```bash
-git tag v2026.11 && git push origin v2026.11
+git tag v2026.12.1 && git push origin v2026.12.1
 ```
 
 El workflow `.github/workflows/release.yml` corre las pruebas, empaqueta el `.skill` y lo adjunta al release.

@@ -51,9 +51,9 @@ de `scripts/` son relativas a la carpeta de esta skill.
 
 1. Si existe `uv`, úsalo: `uv run scripts/<script>.py ...` instala todo en un entorno
    aislado la primera vez.
-2. Si no existe, instálalo sin permisos de administrador: `python3 -m pip install --user uv`
+2. Si no existe, instálalo sin permisos de administrador: `python3 -m pip install --user uv==0.11.19`
    y ejecuta con `python3 -m uv run scripts/<script>.py ...`.
-3. Si `pip` está bloqueado: `python3 -m pip install pdfplumber python-docx playwright`
+3. Si `pip` está bloqueado: `python3 -m pip install pdfplumber==0.11.11 python-docx==1.2.0 playwright==1.65.2 pillow==13.0.0`
    y `python3 scripts/<script>.py ...`.
 4. Para el PDF, `build_cv.py` descarga Chromium (Playwright) la primera vez si no está.
    Si la red lo impide y existe LibreOffice, `soffice --headless --convert-to pdf CV.docx`.

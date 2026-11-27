@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026.12.1 - 2026-11-27
+
+- Preparación para el directorio de Anthropic: `version` en `plugin.json` y dependencias fijadas a versiones exactas.
+
 ## 2026.12 - 2026-11-27
 
 - Perfil maestro (`assets/perfil-maestro.md`): la entrevista queda guardada y el siguiente CV solo pregunta lo que falte.

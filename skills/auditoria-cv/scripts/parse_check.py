@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.9"
-# dependencies = ["pdfplumber>=0.11", "python-docx>=1.1"]
+# dependencies = ["pdfplumber==0.11.11", "python-docx==1.2.0", "pillow==13.0.0"]
 # ///
 """
 parse_check.py — Diagnostico de parseabilidad de un CV en PDF, DOCX, imagen (PNG/JPG/WEBP/GIF) o texto (TXT/MD).
@@ -10,7 +10,7 @@ Simula lo que un ATS extrae realmente del documento y detecta las fallas
 que hacen que un CV quede invisible: PDF-imagen, doble columna, tablas,
 texto oculto, contacto no detectable, bullets sin metricas.
 
-Uso (uv instala las dependencias solo; sin uv: pip install pdfplumber python-docx):
+Uso (uv instala las dependencias solo; sin uv: pip install pdfplumber==0.11.11 python-docx==1.2.0 pillow==13.0.0):
     uv run parse_check.py CV.pdf|CV.docx [--vacante vacante.txt] [--json salida.json] [--png]
 
 Salida: informe legible en stdout (+ JSON opcional).
@@ -409,7 +409,7 @@ def main():
         import pdfplumber, docx  # noqa: F401
     except ImportError:
         sys.exit("Faltan dependencias. Corre con `uv run parse_check.py ...` o instala: "
-                 "pip install pdfplumber python-docx")
+                 "pip install pdfplumber==0.11.11 python-docx==1.2.0 pillow==13.0.0")
 
     transcribir = []
     if ext in TEXTO:
