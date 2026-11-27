@@ -1,6 +1,6 @@
 # Qué filtra de verdad un ATS (y qué no)
 
-**Verificado el 2026-10-19.** Fuente: investigación de esa fecha (research-4). La
+**Verificado el 2026-10-19.** Fuente: investigación de esa fecha. La
 evidencia sobre formato es débil: casi todo son pruebas de proveedores sobre uno o pocos
 documentos. Las fechas y fuentes van junto a cada dato; vuelve a verificar lo perecedero.
 

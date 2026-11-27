@@ -2,39 +2,41 @@
 
 Una columna. Sin tablas, sin cuadros de texto, sin iconos, sin barras, sin foto.
 Nada en encabezado ni pie de página. Fuente estándar 10–12 pt. Márgenes 1" (mínimo 0.5").
+Formato Markdown que entiende `scripts/build_cv.py`: `## ` = sección, línea en
+**negrita** = cargo, `- ` = bullet. Encabezados en el idioma del CV (aquí en inglés).
 Orden de secciones (el que mejor parsea): contacto → resumen → habilidades →
 experiencia → educación → certificaciones.
 
 ---
 
 NOMBRE APELLIDO
-Ciudad, País | correo@dominio.com | +57 300 000 0000 | linkedin.com/in/usuario
+Ciudad, País | correo@dominio.com | +<código país> <teléfono> | linkedin.com/in/usuario
 
-PERFIL PROFESIONAL
+## Summary
 [Título del rol al que aplicas] con [X años] en [dominio]. [2-3 herramientas duras que
 pide la oferta, con el nombre exacto]. [Un logro con cifra].
 
-HABILIDADES
-[Lista simple separada por comas. Es la zona de mayor densidad de términos y la que
-más peso tiene en el scorecard. Sigla y forma completa la primera vez.]
+## Skills
+[Lista simple separada por comas, agrupada por tipo si ayuda. Los términos clave también
+deben aparecer en la experiencia, con contexto. Sigla y forma completa la primera vez.]
 
-EXPERIENCIA
+## Experience
 
-Cargo | Empresa | Ciudad | MM/AAAA – MM/AAAA
+**Cargo | Empresa | Ciudad | MM/AAAA – MM/AAAA**
 - [Verbo] + [qué, con el término técnico] + [resultado cuantificado]
 - ...
 
-Cargo | Empresa | Ciudad | MM/AAAA – MM/AAAA
+**Cargo | Empresa | Ciudad | MM/AAAA – MM/AAAA**
 - ...
 
-EDUCACIÓN
+## Education
 Título | Institución | AAAA
 
-CERTIFICACIONES
+## Certifications
 Nombre exacto de la certificación | Emisor | AAAA
 
-IDIOMAS
-Español (nativo), Inglés (B2)
+## Languages
+<Idioma> (nativo), <Idioma> (<nivel MCER o certificado>)
 
 ---
 

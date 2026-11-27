@@ -1,0 +1,14 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "auditoria-cv",
+  "description": "Skill de Claude para auditar y reescribir CVs (genérico o a medida de una oferta).",
+  "owner": { "name": "dux14", "url": "https://github.com/dux14" },
+  "plugins": [
+    {
+      "name": "auditoria-cv",
+      "description": "Entrevista y reescribe tu CV: genérico para un rol o a medida de una oferta, con diagnóstico ATS y entrega en DOCX/PDF.",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}

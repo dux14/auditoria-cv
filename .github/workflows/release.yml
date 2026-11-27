@@ -12,11 +12,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build .skill
+      - name: Test
         run: |
-          mkdir -p dist/auditoria-cv
-          cp -R SKILL.md assets references scripts dist/auditoria-cv/
-          (cd dist && zip -qr "auditoria-cv-${GITHUB_REF_NAME}.skill" auditoria-cv)
+          pip install -q python-docx pytest
+          pytest -q tests/
+      - name: Build .skill (para claude.ai)
+        run: |
+          mkdir -p dist
+          (cd skills && zip -qr "../dist/auditoria-cv-${GITHUB_REF_NAME}.skill" auditoria-cv)
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}

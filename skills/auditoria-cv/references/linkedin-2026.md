@@ -1,6 +1,6 @@
 # Perfil de LinkedIn para búsqueda de reclutadores - edición 2026-10-19
 
-Fuente: research-3 y research-5, verificadas el **2026-10-19**. Etiquetas: [OFICIAL] =
+Fuente: Verificadas el **2026-10-19**. Etiquetas: [OFICIAL] =
 página de LinkedIn leída; [TERCEROS] = blogs/proveedores; [REC] = recomendación de la
 skill; [FOLKLORE] = repetido sin fuente primaria. LinkedIn **no publica pesos de
 ranking**: cualquier "el headline pesa más" es folklore.
@@ -71,8 +71,8 @@ Verifica los límites de TERCEROS en la interfaz de edición antes de decir que 
 ## Guía por sección [REC]
 
 1. **Headline**: título que el reclutador escribe + 2-4 sustantivos de stack + diferenciador
-   + ubicación/disponibilidad verdadera. Ej.: `AI Quality / Agent Evaluation Engineer |
-   Evals, CI gates, MCP | Python, TypeScript | Remote (UTC-5)`. Sin títulos creativos ni
+   + ubicación/disponibilidad verdadera. Ej.: `Senior Data Analyst |
+   SQL, Power BI, dbt | Retail & Supply Chain | Remote (UTC-5)`. Sin títulos creativos ni
    "Open to work" (no aporta si es modo solo reclutadores).
 2. **About**: en los ~370 caracteres visibles: título, años, stack, ubicación,
    disponibilidad (remoto, zona horaria, autorización de trabajo, nivel de inglés). Luego
@@ -83,7 +83,7 @@ Verifica los límites de TERCEROS en la interfaz de edición antes de decir que 
 4. **Habilidades**: llena muchas (LinkedIn asocia 10+ con menor tiempo sin empleo); las 3
    fijadas = habilidades del título objetivo (la fijación se describe por terceros;
    verifícala en la interfaz). Solo las defendibles.
-5. **Featured / Proyectos**: 1-3 artefactos públicos (repo de agente, texto de eval).
+5. **Featured / Proyectos**: 1-3 artefactos públicos (repo, caso de estudio, portafolio).
    Sin evidencia de que puntúen en el ranking; sirven como prueba. GitHub: repos fijados
    con README.
 6. **Recomendaciones, foto, banner**: sin evidencia primaria de efecto en ranking. Las
@@ -105,14 +105,14 @@ empleo: el marco público es defendible. Rellena cargos y tipo remoto siempre.
 
 ## Perfil bilingüe y ubicación
 
-- Principal en inglés (remoto global, la mayoría de roles de IA). Secundario en español
-  [REC], traducido a mano con términos locales ("Ingeniero/a de IA"), mismos cargos y
+- Principal en el idioma del mercado objetivo (inglés para remoto global). Secundario en
+  el otro idioma [REC], traducido a mano con términos locales, mismos cargos y
   fechas. LinkedIn indica que ayuda a ser hallado, pero no dice que la búsqueda de
   reclutadores indexe perfiles secundarios, ni hay coincidencia entre idiomas
   documentada. No dependas de ello.
 - **Ubicación verdadera.** País/región es obligatorio y es una señal gruesa. No pongas un
   país donde no resides: engaña sobre autorización de trabajo y daña la confianza. Mantén
-  la real y en headline/About di "Open to relocate to Spain / EU" (ver `espana.md`);
+  la real y en headline/About di "Open to relocate to <país/región>";
   añade los países objetivo en Open to Work.
 
 ## Actividad (secundaria, de bajo volumen)
@@ -120,7 +120,7 @@ empleo: el marco público es defendible. Rellena cargos y tipo remoto siempre.
 El feed se reconstruyó (2026-03-12): recomendación semántica por intereses
 [OFICIAL]. Ninguna fuente primaria dice que publicar suba el ranking en Recruiter; el
 contenido genera vistas y confianza. [REC] 1 publicación por semana o 2 al mes sobre
-artefactos concretos (resultados de evals, lecciones de QA para LLM) con enlace al repo
+artefactos concretos (proyectos, resultados, lecciones aprendidas) con enlace al repo
 en el primer comentario; comentarios con sustancia a ingenieros de empresas objetivo. No
 hay cadencia óptima demostrada. Evita pods, comentarios automáticos, texto genérico de IA.
 Las afirmaciones sobre enlaces externos penalizados o carruseles son folklore.
@@ -133,7 +133,7 @@ Premium Career (desde ~US$39,99/mes en EE.UU.): 5 InMails, quién vio tu perfil 
 ## Checklist de auditoría de perfil (salida QUITAR/CAMBIAR/MEJORAR/AÑADIR)
 
 Pide el texto del perfil pegado por el usuario (no lo raspes). Por campo, entrega
-actual -> propuesto, en inglés:
+actual -> propuesto, en el idioma del perfil:
 
 - Headline: ¿título estándar + stack + ubicación verdadera? (CAMBIAR/MEJORAR)
 - About: ¿primeros ~370 caracteres con lo esencial? (CAMBIAR)

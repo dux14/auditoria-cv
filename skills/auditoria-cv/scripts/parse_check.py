@@ -13,7 +13,7 @@ Salida: informe legible en stdout (+ JSON opcional).
 El texto crudo extraido se guarda junto al PDF como <nombre>.ats.txt
 """
 
-import argparse, json, os, re, subprocess, sys
+import argparse, json, os, re, shutil, subprocess, sys
 from collections import Counter
 
 # ---------- utilidades ----------
@@ -262,6 +262,15 @@ def main():
     ap.add_argument("--vacante", help="archivo .txt con la descripcion de la vacante")
     ap.add_argument("--json", help="ruta para volcar el resultado en JSON")
     a = ap.parse_args()
+
+    if not os.path.isfile(a.pdf):
+        sys.exit(f"No existe el archivo: {a.pdf}")
+    # Sin poppler, sh() devuelve "" y todo CV pareceria PDF-imagen: falso bloqueante.
+    faltan = [t for t in ("pdftotext", "pdfinfo", "pdffonts") if not shutil.which(t)]
+    if faltan:
+        sys.exit("Faltan herramientas de poppler: " + ", ".join(faltan) +
+                 ". Instala con `brew install poppler` (macOS) o "
+                 "`apt install poppler-utils` (Linux).")
 
     inv = inventario(a.pdf)
     raw, layout = texto_ats(a.pdf)

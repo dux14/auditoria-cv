@@ -1,13 +1,13 @@
 # Plantilla del informe de auditoría
 
 Usa esta estructura. La tabla de hallazgos por sección es el corazón: el usuario debe
-poder aplicar los cambios sin volver a preguntar nada. Prosa del informe en español
-neutro; el texto propuesto para el CV o LinkedIn, en inglés.
+poder aplicar los cambios sin volver a preguntar nada. Prosa del informe en el idioma
+del usuario; el texto propuesto para el CV o LinkedIn, en el idioma acordado en la Fase 0.
 
 ---
 
-# Auditoría de CV - [Nombre] -> [Rol / vacante, o "perfil general"]
-Fecha: [AAAA-MM-DD] | Mercado: [Colombia / EE.UU.-remoto / España-UE]
+# Auditoría de CV - [Nombre] -> [Rol / vacante, o "CV genérico para <rol>"]
+Fecha: [AAAA-MM-DD] | Modo: [genérico / oferta] | Mercado: [país o remoto] | Idioma: [..]
 
 ## Veredicto en una línea
 [¿Qué es lo único que hay que arreglar si solo se arregla una cosa?]
@@ -35,8 +35,8 @@ Cobertura de términos: **N%** (indicador de brecha, no puntaje de ATS)
 
 | Término de la oferta | ¿En el CV? | Acción |
 |---|---|---|
-| Playwright | No | Añadir a Skills y al bullet donde lo usaste |
-| MCP | No | **Brecha real**: no lo has usado. No inventar. |
+| Power BI | No | Añadir a Skills y al bullet donde lo usaste |
+| SAP S/4HANA | No | **Brecha real**: no lo has usado. No inventar. |
 
 ## 4. Hallazgos por sección
 
@@ -47,20 +47,20 @@ Cobertura de términos: **N%** (indicador de brecha, no puntaje de ATS)
 
 ### Resumen / Experiencia / Habilidades / Proyectos / Educación
 (Misma tabla en cada una. QUITAR / CAMBIAR / MEJORAR / AÑADIR. Siempre el texto original
-y el reemplazo literal, en inglés, listo para copiar.)
+y el reemplazo literal, listo para copiar.)
 
 ## 5. Registro de evidencia
 Cada cifra y herramienta del CV reescrito. Sin fuente ni atestación, no entra.
 
 | Afirmación en el CV | Fuente verificable | Estado | Riesgo en entrevista |
 |---|---|---|---|
-| Built `<N>`-task eval harness | repo `<url>`, `evals/` | VERIFICADO | ¿Qué grader y qué compuerta? |
-| Cut review time `<a>` -> `<b>` | - | USER-ATTESTED | Piden método de medición |
-| MCP server, `<N>` tools | - | PENDIENTE (falta fuente) | Permisos, pruebas, precisión |
+| Built `<N>` Power BI dashboards | enlace a portafolio | VERIFICADO | ¿Qué decisiones cambiaron? |
+| Cut month-end close `<a>` -> `<b>` days | - | USER-ATTESTED | Piden método de medición |
+| Led migration to `<tool>` | - | PENDIENTE (falta fuente) | ¿Tu rol exacto? ¿Equipo? |
 
 Estados: VERIFICADO (enlace, PR, documento), USER-ATTESTED (el usuario lo afirma y puede
 defenderlo), PENDIENTE (se retira del CV hasta tener una de las dos). Marca aparte lo que
-el entrevistador va a sondear: MCP, RAG, evals, agentes.
+el entrevistador va a sondear (lo técnico y lo cuantitativo).
 
 ## 6. Alcance y lenguaje de impacto
 Bullets con alcance verificable: **N de M**. [Sin porcentajes inventados.] Los bullets que
@@ -69,11 +69,11 @@ necesitan un dato que solo tiene el usuario, con la pregunta exacta que hay que 
 ## 7. Brecha de pruebas públicas
 | Prueba que piden las ofertas objetivo | ¿Existe? | Qué crear (mínimo) |
 |---|---|---|
-| Repo con harness de eval y README con resultados y fallos | No | Un repo con `<N>` tareas, graders, compuerta de CI |
-| Texto que explique una decisión de diseño | No | Un write-up de 600-1.000 palabras enlazado en Featured |
+| Portafolio / repo / caso de estudio del tipo de trabajo que pide la oferta | No | Una muestra mínima y honesta |
+| Certificación exigida como requisito duro | No | Ruta y fecha realista; no listarla hasta tenerla |
 
 ## 8. Kit de LinkedIn (opcional, solo si se pidió)
-Salida de `references/linkedin-2026.md`, texto en inglés listo para pegar. Aplicación
+Salida de `references/linkedin-2026.md`, texto listo para pegar. Aplicación
 manual por el usuario; nada se automatiza.
 
 | Acción | Campo | Actual | Propuesto |
@@ -83,7 +83,7 @@ manual por el usuario; nada se automatiza.
 | AÑADIR | Skills / Featured / Open to Work / idioma secundario | - | ... |
 
 ## 9. Mercado y autorización (si aplica)
-[Notas de `references/espana.md` o del mercado elegido; marca como "verificar" lo legal.]
+[Notas de `references/mercados.md` y de la investigación de la Fase 3; marca como "verificar" lo legal.]
 
 ## 10. Plan
 1. [Lo bloqueante]

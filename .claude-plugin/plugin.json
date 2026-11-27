@@ -1,0 +1,9 @@
+{
+  "name": "auditoria-cv",
+  "description": "Entrevista y reescribe tu CV: genérico para un rol o a medida de una oferta. Diagnóstico ATS, investigación de la oferta, preguntas de métricas y entrega en DOCX/PDF.",
+  "author": { "name": "dux14", "url": "https://github.com/dux14" },
+  "homepage": "https://github.com/dux14/auditoria-cv",
+  "repository": "https://github.com/dux14/auditoria-cv",
+  "license": "MIT",
+  "keywords": ["cv", "resume", "hoja-de-vida", "ats", "job-search", "linkedin"]
+}

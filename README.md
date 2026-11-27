@@ -1,79 +1,92 @@
 # auditoria-cv
 
-Skill de Claude que audita una hoja de vida (PDF o DOCX) y entrega un informe accionable por secciones, con la versión reescrita lista para enviar.
+Skill de Claude que te entrevista y reescribe tu CV (hoja de vida, currículum, resume) en dos modos:
 
-## Qué hace
+1. **CV genérico**: un CV fuerte para un tipo de rol y mercado, comparado contra ofertas reales y recientes.
+2. **CV a medida de una oferta**: comparado contra la vacante, la empresa y su proceso de selección.
 
-1. **Diagnóstico ATS.** Antes de opinar sobre el contenido, extrae el texto como lo haría un ATS y detecta PDF-imagen, doble columna, tablas, texto oculto y campos no mapeables.
-2. **Informe por secciones** con acciones QUITAR / CAMBIAR / MEJORAR / AÑADIR.
-3. **Versión reescrita** del CV, lista para enviar.
-4. **Registro de evidencia:** cada cifra y herramienta del CV queda enlazada con su fuente, y lo que no se puede respaldar se retira.
+## Cómo funciona
 
-Modos adicionales:
+| Fase | Qué pasa |
+|---|---|
+| 0. Enfoque | Te pregunta el modo, el rol, el mercado, el idioma y tu situación. |
+| 1. Insumos | Te pide el CV actual (PDF o DOCX) y, si aplica, la oferta. |
+| 2. Diagnóstico | Extrae el texto como lo haría un ATS y detecta PDF-imagen, columnas, tablas, texto oculto y contacto o fechas que no se leen. |
+| 3. Investigación | Busca en la web la oferta, la empresa y el ATS que usan, o varias ofertas recientes del rol. |
+| 4. Brechas | Cruza los requisitos contra tu CV: cubierto, parcial o ausente. |
+| 5. Entrevista | Te pide métricas, periodos, alcance y experiencia real con cada requisito. |
+| 6-7. Entrega | Te entrega el CV nuevo en DOCX y PDF, verificado de nuevo con el diagnóstico, más un informe QUITAR / CAMBIAR / MEJORAR / AÑADIR. |
 
-- **CV de IA / AI engineer:** agentes, MCP, evals y bloque de habilidades defendible.
-- **Perfil de LinkedIn:** texto listo para pegar, optimizado para búsqueda de reclutadores.
-- **Mercados:** España/UE, Colombia/LATAM y EE.UU./remoto.
-
-Funciona con o sin una vacante específica. Si hay oferta, calcula la brecha de términos clave contra ella.
+Parte de cómo se filtra hoy: primero las preguntas eliminatorias del formulario, luego el parseo, después la búsqueda y el ranking con IA (que priorizan, casi nunca rechazan solos) y al final el triaje humano. No inventa métricas ni usa trucos como el texto oculto: cada cifra del CV nuevo tiene una fuente o la confirmas tú.
 
 ## Instalación
 
-### Claude Code (recomendado: se actualiza con `git pull`)
+### Claude Code (recomendado, con actualizaciones)
 
-```bash
-git clone https://github.com/dux14/auditoria-cv ~/.claude/skills/auditoria-cv
+```
+/plugin marketplace add dux14/auditoria-cv
+/plugin install auditoria-cv@auditoria-cv
 ```
 
-Actualizar:
+**Activa las actualizaciones automáticas** (vienen apagadas por defecto en marketplaces de terceros): `/plugin` → *Marketplaces* → `auditoria-cv` → *Enable auto-update*. Así recibes cada cambio que se publique en este repo al iniciar Claude Code. Para actualizar a mano: `/plugin marketplace update auditoria-cv`.
 
-```bash
-git -C ~/.claude/skills/auditoria-cv pull
-```
-
-Reinicia la sesión de Claude Code para que cargue la versión nueva.
+Para los scripts necesitas `poppler` (`brew install poppler` o `apt install poppler-utils`) y, para generar el DOCX, `uv` o `pip install python-docx`. El PDF se genera con LibreOffice o con Chrome.
 
 ### Claude (app o web)
 
-1. Descarga el archivo `auditoria-cv-<versión>.skill` desde [Releases](https://github.com/dux14/auditoria-cv/releases/latest).
-2. Ve a Settings → Capabilities → Skills y sube el archivo.
-3. Para actualizar, elimina la versión anterior y sube la nueva. Si no la eliminas, pueden quedar archivos viejos mezclados.
+1. Descarga `auditoria-cv-<versión>.skill` desde [Releases](https://github.com/dux14/auditoria-cv/releases/latest).
+2. Ve a *Customize → Skills → + → Upload a skill* y sube el archivo.
+3. Para actualizar, borra la versión anterior y sube la nueva. Claude.ai no actualiza las skills personales desde GitHub.
+
+### Otros agentes (estándar Agent Skills)
+
+```bash
+npx skills add dux14/auditoria-cv     # instalar
+npx skills update                     # actualizar
+```
+
+O copia `skills/auditoria-cv/` a la carpeta de skills de tu agente.
 
 ## Uso
 
-Pídele a Claude, por ejemplo:
-
-- «Audita mi hoja de vida» (adjunta el PDF o DOCX).
-- «Adapta mi CV a esta oferta» (pega la vacante).
-- «Reescribe mi perfil de LinkedIn para roles de AI engineer».
-
-La skill se activa sola cuando mencionas CV, hoja de vida, resume, ATS, LinkedIn o reclutadores.
+- «Ayúdame con mi CV» o «Adapta mi CV a esta oferta: <enlace>». La skill arranca con las preguntas de enfoque.
+- Se activa sola cuando mencionas CV, hoja de vida, resume, ATS, una oferta de trabajo o LinkedIn.
 
 ## Contenido
 
 | Ruta | Para qué sirve |
 |---|---|
-| `SKILL.md` | Flujo principal y reglas de la skill |
-| `references/` | ATS, redacción, LinkedIn, roles de IA, mercado de España y plantilla del informe |
-| `assets/` | CVs base (ATS general y AI engineer) |
-| `scripts/parse_check.py` | Diagnóstico de qué texto extrae un ATS |
+| `skills/auditoria-cv/SKILL.md` | Flujo y reglas |
+| `skills/auditoria-cv/references/` | Cómo filtran los ATS y la IA, preguntas de la entrevista, mercados, redacción, plantilla del informe y LinkedIn |
+| `skills/auditoria-cv/assets/cv-ats-base.md` | Esqueleto de CV a prueba de parser |
+| `skills/auditoria-cv/scripts/parse_check.py` | Diagnóstico de lo que extrae un ATS |
+| `skills/auditoria-cv/scripts/build_cv.py` | Markdown a DOCX y HTML de una columna |
+| `.claude-plugin/` | Manifiestos de marketplace y plugin de Claude Code |
 
 ## Límites
 
-- Las cifras de mercado y de LinkedIn de `references/` están fechadas en octubre de 2026. Reverifícalas antes de usarlas como base de decisiones.
-- La skill no inventa logros: lo que no tenga evidencia se marca o se retira.
+- Los datos de mercado de `references/` llevan fecha. Reverifícalos antes de basar decisiones en ellos.
+- No es asesoría legal (visas, autorización de trabajo).
+- No inventa logros: lo que no tiene evidencia se marca o se retira.
 
 ## Contribuir
 
-Los issues y pull requests son bienvenidos, sobre todo para actualizar datos de mercado o añadir mercados nuevos. Registra los cambios en `CHANGELOG.md`.
-
-## Publicar una versión
+Issues y pull requests son bienvenidos, sobre todo para actualizar datos o añadir mercados. Registra los cambios en `CHANGELOG.md` y corre las pruebas:
 
 ```bash
-git tag v2026.10 && git push origin v2026.10
+uv run --with python-docx --with pytest pytest tests/
+claude plugin validate .
 ```
 
-El workflow de `.github/workflows/release.yml` empaqueta el `.skill` y lo adjunta al release.
+## Publicar
+
+Cada commit en `main` llega a quienes activaron la actualización automática (el plugin no fija `version`, así que se sigue el commit). Para claude.ai, crea un tag:
+
+```bash
+git tag v2026.11 && git push origin v2026.11
+```
+
+El workflow `.github/workflows/release.yml` corre las pruebas, empaqueta el `.skill` y lo adjunta al release.
 
 ## Licencia
 
