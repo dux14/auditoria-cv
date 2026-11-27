@@ -17,7 +17,9 @@ Salida: informe legible en stdout (+ JSON opcional).
 El texto crudo extraido se guarda junto al PDF como <nombre>.ats.txt
 """
 
-import argparse, json, os, re, sys
+import argparse, json, logging, os, re, sys
+
+logging.getLogger("pdfminer").setLevel(logging.ERROR)  # avisos de fuentes que no afectan la extraccion
 from collections import Counter
 
 # ---------- utilidades ----------
@@ -218,26 +220,41 @@ def detectar_tablas(path):
                 pass
     return {"tablas": total}
 
-def detectar_texto_oculto(path):
-    """Texto blanco o casi blanco sobre fondo blanco = bandera de fraude en Workday/Greenhouse/Lever."""
+def luminancia(col):
+    """0 = negro, 1 = blanco. Gris (1 valor), RGB (3) o CMYK (4). None si no se puede leer."""
+    if col is None:
+        return None
+    if isinstance(col, (int, float)):
+        col = [col]
     try:
-        import pdfplumber
-    except ImportError:
-        return {"texto_oculto": None}
+        v = [float(c) for c in col]
+    except Exception:
+        return None
+    if len(v) == 1:
+        return v[0]
+    if len(v) == 3:
+        return 0.299 * v[0] + 0.587 * v[1] + 0.114 * v[2]
+    if len(v) == 4:
+        return (1 - v[3]) * (1 - sum(v[:3]) / 3)
+    return None
+
+def detectar_texto_oculto(path):
+    """Texto casi blanco que NO esta sobre un fondo oscuro o una imagen = texto invisible,
+    bandera de keyword stuffing. Blanco sobre una barra lateral oscura es diseño, no trampa."""
     sospechosos = 0
-    with pdfplumber.open(path) as pdf:
+    with abrir_pdf(path) as pdf:
         for page in pdf.pages:
+            fondos = [(o["x0"], o["top"], o["x1"], o["bottom"]) for o in page.images]
+            for o in list(page.rects) + list(page.curves):
+                l = luminancia(o.get("non_stroking_color")) if o.get("fill") else None
+                if l is not None and l < 0.75:
+                    fondos.append((o["x0"], o["top"], o["x1"], o["bottom"]))
             for ch in (page.chars or []):
-                col = ch.get("non_stroking_color")
-                if col is None:
+                l = luminancia(ch.get("non_stroking_color"))
+                if l is None or l <= 0.94 or not ch["text"].strip():
                     continue
-                if isinstance(col, (int, float)):
-                    col = [col]
-                try:
-                    vals = [float(c) for c in col]
-                except Exception:
-                    continue
-                if vals and all(v > 0.94 for v in vals):
+                cx, cy = (ch["x0"] + ch["x1"]) / 2, (ch["top"] + ch["bottom"]) / 2
+                if not any(x0 <= cx <= x1 and t <= cy <= bt for x0, t, x1, bt in fondos):
                     sospechosos += 1
     return {"texto_oculto": sospechosos}
 
@@ -320,6 +337,16 @@ excelente excelentes solida solidas fuerte buena buenas alto alta nuestro nuestr
 minimo minima mas menos etc entre cada todo toda todos todas donde como cuando muy tambien
 ademas asi mismo tanto parte lugar forma manera tipo caso vez veces dia dias mes meses
 senior junior semi ssr sr jr pleno trainee practicante estudiante profesional titulado
+what who why how when where which while within without into onto over under across along
+one two three our ours their them they these those there here also just only very more most
+can could would should may might shall must need needs needed want wants looking look seek
+strong deep solid great good excellent proven demonstrated ability able skills skill knowledge
+working work works worked help helps helping make makes making build builds building
+opportunity opportunities ideal passion passionate drive driven self sufficient confident
+including include includes such etc like well other others new key core based
+part full time day days week weeks month months company's we're you're you'll we'll it's
+across apply applying application benefits salary compensation competitive hourly rate
+team's teams business businesses partner partners partnering closely ensure ensuring
 """.split())
 
 SUF_VERBO = ("ar", "er", "ir", "ando", "iendo", "amos", "emos", "imos", "aran", "eran")
@@ -425,7 +452,10 @@ def main():
           f"Imagenes: {inv['imagenes']} | Peso: {inv['kb']} KB")
 
     if escaneado:
-        if es_docx:
+        if ext in TEXTO:
+            print("\n[BLOQUEANTE] El archivo de texto casi no tiene contenido (<100 caracteres).")
+            print("  No hay CV que analizar: pide el CV completo o construye el perfil en la Fase 5.")
+        elif es_docx:
             print("\n[BLOQUEANTE] El DOCX casi no tiene texto (<100 caracteres).")
             print("  Suele ser un CV pegado como imagen dentro de Word. El ATS no lee imagenes.")
         else:

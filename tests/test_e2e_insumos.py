@@ -307,3 +307,36 @@ def test_21_ciclo_completo(tmp_path):
         r, out = pc(f)
         sin_bloqueos(r, out)
         assert r["tablas"]["tablas"] == 0 and r["campos"]["email"] == ["ana@example.com"], f
+
+
+# ---------- regresiones de la corrida completa (2026-11-27) ----------
+
+def test_22_blanco_sobre_barra_oscura_no_es_oculto(pdf_de):
+    """Diseño legítimo: texto blanco sobre una barra lateral oscura NO es keyword stuffing."""
+    html = doc_html('<div style="background:#1f3a5f;color:#fff;padding:12px">'
+                    'Bogota | ana@example.com | SQL Python Power BI</div>' + CUERPO.format(nombre="Ana Perez"))
+    r, out = pc(pdf_de(html))
+    assert r["oculto"]["texto_oculto"] == 0 and "CRITICO" not in out
+
+
+def test_23_sin_ruido_de_pdfminer(pdf_de):
+    html = doc_html('<p style="font-family:Georgia,serif">' + CUERPO.format(nombre="Ana Perez") + "</p>")
+    r = correr(PC, pdf_de(html))
+    assert "FontBBox" not in r.stderr and "Could not" not in r.stderr
+
+
+def test_24_vacante_en_ingles_sin_relleno(pdf_de, tmp_path):
+    vac = tmp_path / "v.txt"
+    vac.write_text("What you'll do: build dbt models across teams. One team, one dream. "
+                   "We are looking for an opportunity to work with real estate data. "
+                   "Strong experience with dbt and Airflow. Experience with dbt and SQL.")
+    r, _ = pc(pdf_de(cv_html()), "--vacante", vac)
+    todos = r["match"]["presentes"] + r["match"]["ausentes"]
+    assert "dbt" in todos
+    assert not {"what", "one", "across", "opportunity", "looking", "strong"} & set(todos)
+
+
+def test_25_txt_vacio_no_habla_de_pdf(tmp_path):
+    p = tmp_path / "vacio.txt"; p.write_text("hola")
+    _, out = pc(p)
+    assert "BLOQUEANTE" in out and "PDF" not in out.split("BLOQUEANTE", 1)[1].splitlines()[0]
