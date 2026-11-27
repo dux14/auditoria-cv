@@ -114,7 +114,13 @@ búsqueda, dilo y trabaja con la oferta y el estándar del rol.
 
 **Modo oferta:**
 - La oferta completa: requisitos duros frente a deseables, título exacto, años,
-  ubicación o modalidad, idioma.
+  ubicación o modalidad, idioma. Greenhouse y Lever tienen API pública de solo lectura
+  que da el texto íntegro y la fecha (`boards-api.greenhouse.io/v1/boards/<empresa>/jobs/<id>`,
+  `api.lever.co/v0/postings/<empresa>?mode=json`). Los agregadores (Jobgether, Remotive,
+  etc.) suelen tener ofertas vencidas.
+- **¿Sigue abierta?** Si la página da 404/410 o la oferta no aparece en el portal de la
+  empresa, díselo antes de invertir la entrevista: puede adaptar el CV igual (sirve para
+  ofertas parecidas) o elegir otra. Si el usuario pegó el texto, úsalo aunque haya cerrado.
 - El ATS, por la URL del portal: `myworkdayjobs.com` → Workday; `greenhouse.io` →
   Greenhouse; `lever.co` → Lever; `ashbyhq.com` → Ashby; `smartrecruiters.com`,
   `icims.com`, `successfactors` → los suyos. Ajusta: en Workday, requisitos escritos con
@@ -144,7 +150,8 @@ Pregunta lo que solo el usuario sabe, priorizado por impacto (ver
 por bullet, experiencia real con cada requisito ausente o parcial, certificaciones,
 pausas. Como mucho 5 preguntas por turno; repite hasta cubrir lo importante o hasta que
 el usuario diga que no tiene más datos. Cada respuesta entra al registro de evidencia
-con su estado.
+con su estado. **No pases a la Fase 6 mientras quede un requisito duro del mapa de
+brechas sin preguntar**: cada uno termina como evidencia o como brecha real confirmada.
 
 Al terminar, escribe o actualiza el **perfil maestro** con la forma de
 `assets/perfil-maestro.md` en la carpeta de trabajo del usuario: todo lo que contó,
