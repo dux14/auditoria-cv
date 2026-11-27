@@ -7,8 +7,8 @@
 - Estado ESTIMADO en el registro de evidencia: cifras que el usuario estima con método, solo como aproximadas.
 - Insumos: imágenes (foto o captura), TXT/MD, PDF escaneado y DOCX con el CV pegado como imagen; se exportan las páginas para transcribirlas.
 - La entrevista no avanza a la reescritura con requisitos duros sin preguntar; se avisa si la oferta ya cerró.
-- `parse_check.py`: el texto blanco sobre un fondo oscuro ya no se marca como oculto; sin ruido de pdfminer; menos relleno en inglés al comparar con la vacante.
-- Batería E2E de 44 pruebas con PDF, DOCX, imágenes, texto y casos límite (cifrados, corruptos, no latinos, rutas con espacios, Letter).
+- `parse_check.py`: texto oculto por contraste renderizado (detecta blanco sobre imagen o degradado y texto diminuto; el blanco sobre una barra oscura ya no es falso positivo); sin ruido de pdfminer; menos relleno en inglés al comparar con la vacante.
+- CI en cada PR y en main. Batería E2E de 53 pruebas con PDF, DOCX, imágenes, texto y casos límite (cifrados, corruptos, no latinos, rutas con espacios, Letter).
 
 ## 2026.11 - 2026-11-27
 
