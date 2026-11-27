@@ -31,9 +31,18 @@ def norm(s):
 
 # ---------- capa 0: el documento ----------
 
-def inventario(path):
+def abrir_pdf(path):
     import pdfplumber
-    with pdfplumber.open(path) as pdf:
+    try:
+        pdf = pdfplumber.open(path)
+        pdf.pages  # fuerza la lectura: un PDF roto o cifrado falla aqui
+        return pdf
+    except Exception as e:
+        sys.exit(f"PDF ilegible o protegido ({type(e).__name__}). Pide al usuario otra exportacion "
+                 "sin contrasena, o el DOCX.")
+
+def inventario(path):
+    with abrir_pdf(path) as pdf:
         return {"paginas": len(pdf.pages),
                 "fuentes": len({c.get("fontname") for p in pdf.pages for c in p.chars}),
                 "imagenes": sum(len(p.images) for p in pdf.pages),
@@ -42,18 +51,18 @@ def inventario(path):
 
 def texto_ats(path):
     """Lo que el parser lee: orden de flujo (raw) vs. orden visual (layout). Paginas separadas por \f."""
-    import pdfplumber
-    with pdfplumber.open(path) as pdf:
+    with abrir_pdf(path) as pdf:
         raw = "\f".join(p.extract_text(use_text_flow=True) or "" for p in pdf.pages)
         layout = "\f".join(p.extract_text(layout=True) or "" for p in pdf.pages)
     return raw, layout
 
 def png_pagina1(path, salida):
-    import pdfplumber
-    with pdfplumber.open(path) as pdf:
+    with abrir_pdf(path) as pdf:
         pdf.pages[0].to_image(resolution=110).save(salida)
 
 # ---------- DOCX: los ATS lo leen directo, sin pasar por PDF ----------
+
+MC_FALLBACK = "{http://schemas.openxmlformats.org/markup-compatibility/2006}Fallback"
 
 def leer_docx(path):
     """Devuelve (inv, raw, col, tab, oculto) con la misma forma que el camino PDF."""
@@ -62,9 +71,44 @@ def leer_docx(path):
     doc = Document(path)
     body = doc.element.body
     W = lambda tag: qn("w:" + tag)
+    T, TAB, BR, CR, R, TXBX = W("t"), W("tab"), W("br"), W("cr"), W("r"), W("txbxContent")
+
+    def en_fallback(el):  # Word guarda cada cuadro dos veces (Choice + Fallback VML)
+        return any(a.tag == MC_FALLBACK for a in el.iterancestors())
+
+    def propio(el):
+        """Texto y runs del parrafo, sin entrar en cuadros de texto anidados ni Fallback."""
+        texto, runs = [], []
+        for h in el:
+            if h.tag in (TXBX, MC_FALLBACK):
+                continue
+            if h.tag == T:
+                texto.append(h.text or "")
+            elif h.tag == TAB:
+                texto.append(" ")
+            elif h.tag in (BR, CR):
+                texto.append("\n")
+            else:
+                if h.tag == R:
+                    runs.append(h)
+                t, r = propio(h); texto.append(t); runs += r
+        return "".join(texto), runs
+
+    def oculto(rpr):
+        if rpr is None:
+            return False
+        v = rpr.find(W("vanish"))
+        if v is not None and (v.get(W("val")) or "true").lower() not in ("0", "false"):
+            return True
+        c = rpr.find(W("color"))
+        return c is not None and ((c.get(W("val")) or "").upper() in ("FFFFFF", "FEFEFE", "FDFDFD")
+                                  or c.get(W("themeColor")) in ("background1", "light1"))
+
     lineas, ocultos = [], 0
     for p in body.iter(W("p")):  # orden del documento, incluye tablas y cuadros de texto
-        texto = "".join(t.text or "" for t in p.iter(W("t")))
+        if en_fallback(p):
+            continue
+        texto, runs = propio(p)
         if not texto.strip():
             continue
         ppr = p.find(W("pPr"))
@@ -72,15 +116,8 @@ def leer_docx(path):
         es_lista = ppr is not None and (ppr.find(W("numPr")) is not None or
                    (estilo is not None and "List" in (estilo.get(W("val")) or "")))
         lineas.append(("- " if es_lista else "") + texto)
-        for r in p.iter(W("r")):
-            rpr = r.find(W("rPr"))
-            if rpr is None:
-                continue
-            color = rpr.find(W("color"))
-            blanco = color is not None and (color.get(W("val")) or "").upper() in ("FFFFFF", "FEFEFE", "FDFDFD")
-            if blanco or rpr.find(W("vanish")) is not None:
-                ocultos += sum(len(t.text or "") for t in r.iter(W("t")))
-    cajas = len(list(body.iter(W("txbxContent"))))
+        ocultos += sum(len(propio(r)[0]) for r in runs if oculto(r.find(W("rPr"))))
+    cajas = sum(1 for c in body.iter(TXBX) if not en_fallback(c))
     multicol = any(int(c.get(W("num")) or 1) > 1 for c in body.iter(W("cols")))
     enc_pie = " | ".join(p.text for s in doc.sections for hf in (s.header, s.footer)
                          for p in hf.paragraphs if p.text.strip())
@@ -335,13 +372,17 @@ def main():
     print("=" * 62)
     print(f"DIAGNOSTICO DE PARSEABILIDAD — {os.path.basename(a.pdf)}")
     print("=" * 62)
-    print(f"Paginas: {inv['paginas']} | Fuentes: {inv['fuentes']} | "
+    print(f"Paginas: {inv['paginas'] or 'n/d'} | Fuentes: {inv['fuentes']} | "
           f"Imagenes: {inv['imagenes']} | Peso: {inv['kb']} KB")
 
     if escaneado:
-        print("\n[BLOQUEANTE] El PDF no tiene capa de texto util (PDF-imagen).")
-        print("  El ATS extrae CERO palabras. Equivale a enviar una hoja en blanco.")
-        print("  Causa tipica: exportado desde Canva/Figma como imagen, o escaneado.")
+        if es_docx:
+            print("\n[BLOQUEANTE] El DOCX casi no tiene texto (<100 caracteres).")
+            print("  Suele ser un CV pegado como imagen dentro de Word. El ATS no lee imagenes.")
+        else:
+            print("\n[BLOQUEANTE] El PDF no tiene capa de texto util (PDF-imagen).")
+            print("  El ATS extrae CERO palabras. Equivale a enviar una hoja en blanco.")
+            print("  Causa tipica: exportado desde Canva/Figma como imagen, o escaneado.")
         print("  Accion: rehacer el documento con texto real seleccionable.")
         if a.json:
             json.dump(r, open(a.json, "w"), ensure_ascii=False, indent=2)
@@ -405,7 +446,7 @@ def main():
         print(f"AUSENTES:  {', '.join(m['ausentes'][:20]) or '-'}")
         print("  (Incluir solo los ausentes que sean CIERTOS para ti. Nada de inventar.)")
 
-    txt_out = os.path.splitext(a.pdf)[0] + ".ats.txt"
+    txt_out = a.pdf + ".ats.txt"  # CV.pdf y CV.docx en la misma carpeta no se pisan
     with open(txt_out, "w", encoding="utf-8") as f:
         # las paginas van separadas con un salto de formulario invisible; se hace visible
         # para que una linea no parezca pegada a la siguiente al cruzar de pagina.

@@ -7,14 +7,15 @@
 build_cv.py - Convierte un CV en Markdown simple a DOCX, HTML y PDF de una columna (ATS-seguro).
 
 Uso (uv instala las dependencias solo; sin uv: pip install python-docx playwright):
-    uv run scripts/build_cv.py cv.md [--letter] [--sin-pdf]   # --letter: EE.UU./Canadá; por defecto A4
+    uv run scripts/build_cv.py cv.md [--letter] [--sin-pdf] [--force]   # --letter: EE.UU./Canadá; por defecto A4
 Genera cv.docx, cv.html y cv.pdf junto al .md. El PDF se imprime con Chromium vía
 Playwright; si Chromium no está, se descarga una vez (~150 MB, sin permisos de admin).
 
 Markdown aceptado (lo que produce assets/cv-ats-base.md):
     primera línea = nombre; líneas antes del primer "## " = contacto;
-    "## Sección" = encabezado; línea entera en **negrita** = cargo; "- " = bullet;
-    el resto, párrafo. Negrita en línea se quita.
+    "## Sección" = encabezado; "### X" o línea entera en **negrita** = cargo; "- " = bullet;
+    el resto, párrafo. Se quitan negrita/cursiva y "---"; [texto](url) queda "texto (url)".
+    No sobrescribe .docx/.html/.pdf existentes salvo con --force.
     shortcut: cada línea es un párrafo (no une líneas partidas); escribe cada párrafo en una línea.
 """
 import html, pathlib, re, subprocess, sys
@@ -26,11 +27,14 @@ from docx.shared import Pt
 def bloques(md):
     """Devuelve [(tipo, texto)] con tipo en name|contact|h|job|li|p."""
     out, vistos_h = [], False
+    md = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", " ", md.lstrip("\ufeff"))
     for linea in md.splitlines():
         t = linea.strip()
-        if not t:
+        if not t or re.fullmatch(r"[-*_]{3,}", t):
             continue
-        if t.startswith("## "):
+        if t.startswith("### "):
+            out.append(("job", t[4:].strip())); vistos_h = True
+        elif t.startswith("## "):
             out.append(("h", t[3:].strip())); vistos_h = True
         elif not out:
             out.append(("name", t.lstrip("# ").strip()))
@@ -38,11 +42,16 @@ def bloques(md):
             out.append(("contact", t))
         elif re.fullmatch(r"\*\*(.+)\*\*", t):
             out.append(("job", t[2:-2]))
-        elif t[:2] in ("- ", "* "):
+        elif t[:2] in ("- ", "* ", "+ "):
             out.append(("li", t[2:]))
         else:
             out.append(("p", t))
-    return [(k, re.sub(r"\*\*(.+?)\*\*", r"\1", v)) for k, v in out]
+    def limpio(v):
+        v = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r"\1 (\2)", v)
+        v = re.sub(r"(\*\*|__)(.+?)\1", r"\2", v)
+        v = re.sub(r"(?<![\w*])\*(?!\s)(.+?)(?<!\s)\*(?![\w*])", r"\1", v)
+        return re.sub(r"\s{2,}", " ", v).strip()
+    return [(k, limpio(v)) for k, v in out]
 
 
 def a_docx(bs, ruta):
@@ -86,23 +95,34 @@ def a_pdf(html_path, pdf_path, formato="A4"):
             pg.pdf(path=str(pdf_path), format=formato, print_background=False)
             b.close()
     try:
-        imprimir()
-    except Error as e:
-        if "Executable doesn't exist" not in str(e):
-            raise
-        print("Instalando Chromium para generar el PDF (una sola vez)...", file=sys.stderr)
-        subprocess.run([sys.executable, "-m", "playwright", "install", "chromium"], check=True)
-        imprimir()
+        try:
+            imprimir()
+        except Error as e:
+            if "Executable doesn't exist" not in str(e):
+                raise
+            print("Instalando Chromium para generar el PDF (una sola vez)...", file=sys.stderr)
+            subprocess.run([sys.executable, "-m", "playwright", "install", "chromium"], check=True)
+            imprimir()
+    except (Error, subprocess.CalledProcessError, OSError) as e:
+        sys.exit(f"No se pudo generar el PDF con Chromium ({str(e).splitlines()[0][:200]}).\n"
+                 "El DOCX y el HTML ya estan listos. Alternativas: `soffice --headless --convert-to pdf "
+                 "<archivo>.docx`, o en Linux `python -m playwright install --with-deps chromium`.")
 
 
 def main():
-    args = [x for x in sys.argv[1:] if x not in ("--sin-pdf", "--letter")]
+    banderas = ("--sin-pdf", "--letter", "--force")
+    args = [x for x in sys.argv[1:] if x not in banderas]
     if len(args) != 1:
-        sys.exit("Uso: build_cv.py cv.md [--letter] [--sin-pdf]")
+        sys.exit("Uso: build_cv.py cv.md [--letter] [--sin-pdf] [--force]")
     src = pathlib.Path(args[0])
     if not src.is_file():
         sys.exit(f"No existe el archivo: {src}")
-    bs = bloques(src.read_text(encoding="utf-8"))
+    exts = [".docx", ".html"] + ([] if "--sin-pdf" in sys.argv else [".pdf"])
+    existentes = [str(src.with_suffix(e)) for e in exts if src.with_suffix(e).exists()]
+    if existentes and "--force" not in sys.argv:
+        # el CV original del usuario suele llamarse igual: no lo pisamos sin permiso
+        sys.exit("Ya existen: " + ", ".join(existentes) + ". Usa otro nombre para el .md o --force.")
+    bs = bloques(src.read_text(encoding="utf-8-sig"))
     if not bs:
         sys.exit("El Markdown está vacío.")
     a_docx(bs, src.with_suffix(".docx"))

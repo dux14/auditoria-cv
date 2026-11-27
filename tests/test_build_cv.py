@@ -42,3 +42,26 @@ def test_md_a_docx_y_html(tmp_path):
     html = (tmp_path / "cv.html").read_text(encoding="utf-8")
     assert "<h1>Ana Pérez</h1>" in html and "<li>Built 12 Power BI" in html
     assert "**" not in html
+
+
+def test_markdown_sucio(tmp_path):
+    src = tmp_path / "sucio.md"
+    src.write_text("﻿# Ana Pérez\n\n[Portafolio](https://ana.dev) | a@b.com\n\n---\n\n## Experience\n\n"
+                   "### Analyst | Acme | 2020 - 2022\n\n- Texto pegado\x0bcon control.\n", encoding="utf-8")
+    subprocess.run([sys.executable, str(SCRIPT), str(src), "--sin-pdf"], check=True)
+    paras = [(p.style.name, p.text) for p in Document(tmp_path / "sucio.docx").paragraphs if p.text]
+    assert paras[0] == ("Title", "Ana Pérez")
+    assert paras[1][1] == "Portafolio (https://ana.dev) | a@b.com"
+    assert all(t != "---" for _, t in paras)
+    assert ("Normal", "Analyst | Acme | 2020 - 2022") in paras
+    assert ("List Bullet", "Texto pegado con control.") in paras
+
+
+def test_no_sobrescribe_el_original(tmp_path):
+    src = tmp_path / "cv.md"; src.write_text(MD, encoding="utf-8")
+    original = tmp_path / "cv.docx"; original.write_bytes(b"CV ORIGINAL")
+    r = subprocess.run([sys.executable, str(SCRIPT), str(src), "--sin-pdf"], capture_output=True, text=True)
+    assert r.returncode != 0 and "--force" in r.stderr
+    assert original.read_bytes() == b"CV ORIGINAL"
+    subprocess.run([sys.executable, str(SCRIPT), str(src), "--sin-pdf", "--force"], check=True)
+    assert original.read_bytes() != b"CV ORIGINAL"

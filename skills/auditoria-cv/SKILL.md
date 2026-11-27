@@ -157,7 +157,8 @@ Parte de `assets/cv-ats-base.md`. Reglas de redacción en `references/redaccion.
    uv run scripts/build_cv.py Nombre-Apellido-Rol.md            # A4
    uv run scripts/build_cv.py Nombre-Apellido-Rol.md --letter   # EE.UU./Canadá
    ```
-   Genera `.docx`, `.html` y `.pdf`. Si no puedes generar archivos, entrega el texto
+   Genera `.docx`, `.html` y `.pdf`. Nunca sobrescribe archivos existentes: si el nombre
+   choca con el CV original, usa otro (p. ej. `-v2`); no uses `--force` sobre el original. Si no puedes generar archivos, entrega el texto
    completo listo para pegar en una plantilla de una columna y explica cómo exportar a
    PDF desde Word o Google Docs.
 2. **Verificación**: corre `parse_check.py` sobre el PDF nuevo y muestra el antes y el

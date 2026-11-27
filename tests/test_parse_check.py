@@ -68,3 +68,40 @@ def test_pdf_y_png(tmp_path):
     assert not r["es_pdf_imagen"] and not r["columnas"]["multicolumna"]
     assert r["campos"]["email"] == ["ana@example.com"]
     assert (tmp_path / "cv.p1.png").stat().st_size > 1000
+
+
+MC = "http://schemas.openxmlformats.org/markup-compatibility/2006"
+WNS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+
+
+def test_docx_cuadro_texto_tab_y_vanish(tmp_path):
+    from docx.oxml import parse_xml
+    doc = Document()
+    doc.add_paragraph("Ana Pérez", style="Title")
+    p = doc.add_paragraph("a@b.com")
+    # cuadro de texto como lo guarda Word: Choice (DrawingML) + Fallback (VML), mismo texto
+    caja = lambda: (f'<w:txbxContent xmlns:w="{WNS}"><w:p><w:r><w:t>CAJA UNO</w:t></w:r></w:p></w:txbxContent>')
+    p._p.append(parse_xml(
+        f'<w:r xmlns:w="{WNS}" xmlns:mc="{MC}"><mc:AlternateContent>'
+        f'<mc:Choice Requires="wps">{caja()}</mc:Choice><mc:Fallback>{caja()}</mc:Fallback>'
+        f'</mc:AlternateContent></w:r>'))
+    t = doc.add_paragraph()
+    t._p.append(parse_xml(f'<w:r xmlns:w="{WNS}"><w:t>Acme</w:t><w:tab/><w:t>2020 - 2022</w:t></w:r>'))
+    v = doc.add_paragraph()
+    v._p.append(parse_xml(f'<w:r xmlns:w="{WNS}"><w:rPr><w:vanish w:val="0"/></w:rPr><w:t>visible</w:t></w:r>'))
+    doc.add_paragraph("Experience " * 12)
+    src = tmp_path / "caja.docx"; doc.save(src)
+    r, out = correr(src)
+    raw = (tmp_path / "caja.docx.ats.txt").read_text()
+    assert raw.count("CAJA UNO") == 2  # una vez en cada orden (flujo y visual), no 4+4
+    assert "a@b.comCAJA" not in raw
+    assert "Acme 2020 - 2022" in raw
+    assert r["oculto"]["texto_oculto"] == 0
+    assert "1 cuadro(s)" in out
+    assert "Paginas: n/d" in out
+
+
+def test_pdf_ilegible(tmp_path):
+    malo = tmp_path / "roto.pdf"; malo.write_bytes(b"")
+    r = subprocess.run([sys.executable, str(SCRIPT), str(malo)], capture_output=True, text=True)
+    assert r.returncode != 0 and "ilegible" in r.stderr and "Traceback" not in r.stderr
