@@ -13,6 +13,8 @@ Reglas de forma:
 
 ## Fase 0 - Enfoque (siempre, al inicio)
 
+Si el usuario trae un perfil maestro, léelo antes y no preguntes lo que ya responde.
+
 1. ¿Qué quieres: (a) un **CV genérico** fuerte para un tipo de rol, o (b) un **CV para
    una oferta concreta**? Si es (b), pide el enlace o el texto completo de la oferta.
 2. Rol objetivo y nivel (p. ej. "Data Analyst, semi-senior"). Si son varios, ¿cuál
@@ -64,6 +66,9 @@ que el CV no prueba, luego los bullets más débiles de los dos últimos empleos
 
 ## Registro de lo que responde
 
-Toda respuesta que entre al CV queda en el registro de evidencia con estado
-USER-ATTESTED (o VERIFICADO si hay enlace o documento). Lo que no tenga uno de los dos
-no entra.
+Toda respuesta queda en el registro de evidencia y en el perfil maestro con su estado:
+VERIFICADO (enlace o documento), USER-ATTESTED (lo afirma con certeza), ESTIMADO (lo
+estima con un método que explica; va al CV como aproximado) o PENDIENTE (no entra).
+
+Cuando el usuario dude ("creo que eran unos 50"), pregunta el método ("¿de dónde sale
+ese número?"). Con método, ESTIMADO; sin método, PENDIENTE y se usa alcance.

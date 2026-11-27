@@ -56,9 +56,31 @@ def texto_ats(path):
         layout = "\f".join(p.extract_text(layout=True) or "" for p in pdf.pages)
     return raw, layout
 
-def png_pagina1(path, salida):
+def png_paginas(path, base, n):
+    """Guarda las primeras n paginas como <base>.pN.png y devuelve las rutas."""
+    rutas = []
     with abrir_pdf(path) as pdf:
-        pdf.pages[0].to_image(resolution=110).save(salida)
+        for i, page in enumerate(pdf.pages[:n], 1):
+            ruta = f"{base}.p{i}.png"
+            page.to_image(resolution=110 if n == 1 else 150).save(ruta)
+            rutas.append(ruta)
+    return rutas
+
+def imagenes_docx(path, base):
+    """Extrae las imagenes incrustadas de un DOCX (CV pegado como imagen) para transcribirlas."""
+    import zipfile
+    rutas = []
+    with zipfile.ZipFile(path) as z:
+        for i, nombre in enumerate(sorted(n for n in z.namelist() if n.startswith("word/media/")), 1):
+            ruta = f"{base}.img{i}{os.path.splitext(nombre)[1]}"
+            with open(ruta, "wb") as f:
+                f.write(z.read(nombre))
+            rutas.append(ruta)
+    return rutas
+
+IMAGENES = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".tif", ".tiff", ".heic"}
+TEXTO = {".txt", ".md"}
+EXPORTAR = {".doc", ".odt", ".pages", ".rtf"}
 
 # ---------- DOCX: los ATS lo leen directo, sin pasar por PDF ----------
 
@@ -337,37 +359,64 @@ def match_vacante(cv_texto, vacante_texto, top=30):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("pdf", help="CV en .pdf o .docx")
+    ap.add_argument("pdf", help="CV en .pdf, .docx, imagen (.png/.jpg/...) o texto (.txt/.md)")
     ap.add_argument("--vacante", help="archivo .txt con la descripcion de la vacante")
     ap.add_argument("--json", help="ruta para volcar el resultado en JSON")
-    ap.add_argument("--png", action="store_true", help="guarda la pagina 1 como <nombre>.p1.png (triaje visual, solo PDF)")
+    ap.add_argument("--png", action="store_true", help="guarda la pagina 1 como <archivo>.p1.png (triaje visual, solo PDF)")
     a = ap.parse_args()
 
     if not os.path.isfile(a.pdf):
         sys.exit(f"No existe el archivo: {a.pdf}")
-    es_docx = a.pdf.lower().endswith(".docx")
-    if not es_docx and not a.pdf.lower().endswith(".pdf"):
-        sys.exit("Formato no soportado: usa .pdf o .docx (convierte .doc/.pages a uno de ellos).")
+    ext = os.path.splitext(a.pdf)[1].lower()
+    es_docx, base = ext == ".docx", a.pdf  # base: los archivos derivados cuelgan del nombre completo
+    if ext in EXPORTAR:
+        sys.exit(f"Formato {ext}: pide al usuario que lo exporte a PDF o DOCX desde su editor.")
+    if ext in IMAGENES:
+        r = {"archivo": os.path.basename(a.pdf), "es_pdf_imagen": True, "formato": "imagen",
+             "transcribir": [a.pdf]}
+        print("=" * 62 + f"\nDIAGNOSTICO DE PARSEABILIDAD — {os.path.basename(a.pdf)}\n" + "=" * 62)
+        print("\n[BLOQUEANTE] El CV es una imagen. Un ATS no extrae ninguna palabra de una imagen.")
+        print("  Accion: transcribe la imagen (leela tu) a cv-transcrito.md y reconstruye el CV.")
+        print(f"  Transcribir: {a.pdf}")
+        if a.json:
+            json.dump(r, open(a.json, "w"), ensure_ascii=False, indent=2)
+        return
+    if ext not in TEXTO and ext not in (".pdf", ".docx"):
+        sys.exit(f"Formato no soportado ({ext or 'sin extension'}): usa PDF, DOCX, imagen, TXT o MD.")
     try:
         import pdfplumber, docx  # noqa: F401
     except ImportError:
         sys.exit("Faltan dependencias. Corre con `uv run parse_check.py ...` o instala: "
                  "pip install pdfplumber python-docx")
 
-    if es_docx:
+    transcribir = []
+    if ext in TEXTO:
+        raw = open(a.pdf, encoding="utf-8-sig", errors="replace").read()
+        layout = raw
+        inv = {"paginas": None, "fuentes": 1, "imagenes": 0,
+               "kb": round(os.path.getsize(a.pdf) / 1024, 1), "encabezado_pie": ""}
+        col = {"multicolumna": False, "paginas_afectadas": [], "detalle": ""}
+        tab, oculto = {"tablas": 0}, {"texto_oculto": 0}
+        escaneado = len(raw.strip()) < 100
+        print("(Texto plano: se revisa contenido y campos; el formato se revisa al generar el CV.)")
+    elif es_docx:
         inv, raw, col, tab, oculto = leer_docx(a.pdf)
         layout = raw
         escaneado = len(raw.strip()) < 100
+        if escaneado:
+            transcribir = imagenes_docx(a.pdf, base)
     else:
         inv = inventario(a.pdf)
         raw, layout = texto_ats(a.pdf)
         escaneado = inv["fuentes"] == 0 or len(raw.strip()) < 100
-        if a.png:
-            png = os.path.splitext(a.pdf)[0] + ".p1.png"
-            png_pagina1(a.pdf, png)
+        if escaneado:
+            transcribir = png_paginas(a.pdf, base, 10)  # shortcut: max 10 paginas; un CV no deberia tener mas
+        elif a.png:
+            png = png_paginas(a.pdf, base, 1)[0]
             print(f"Pagina 1 guardada en: {png}")
 
-    r = {"archivo": os.path.basename(a.pdf), "inventario": inv, "es_pdf_imagen": escaneado}
+    r = {"archivo": os.path.basename(a.pdf), "inventario": inv, "es_pdf_imagen": escaneado,
+         "formato": ext.lstrip("."), "transcribir": transcribir}
 
     print("=" * 62)
     print(f"DIAGNOSTICO DE PARSEABILIDAD — {os.path.basename(a.pdf)}")
@@ -384,11 +433,15 @@ def main():
             print("  El ATS extrae CERO palabras. Equivale a enviar una hoja en blanco.")
             print("  Causa tipica: exportado desde Canva/Figma como imagen, o escaneado.")
         print("  Accion: rehacer el documento con texto real seleccionable.")
+        if transcribir:
+            print("  Transcribe estas imagenes (leelas tu) a cv-transcrito.md antes de seguir:")
+            for t in transcribir:
+                print(f"    {t}")
         if a.json:
             json.dump(r, open(a.json, "w"), ensure_ascii=False, indent=2)
         return
 
-    if not es_docx:
+    if ext == ".pdf":
         col = detectar_columnas(a.pdf)
         tab = detectar_tablas(a.pdf)
         oculto = detectar_texto_oculto(a.pdf)

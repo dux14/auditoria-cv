@@ -59,7 +59,8 @@ Cada cifra y herramienta del CV reescrito. Sin fuente ni atestación, no entra.
 | Led migration to `<tool>` | - | PENDIENTE (falta fuente) | ¿Tu rol exacto? ¿Equipo? |
 
 Estados: VERIFICADO (enlace, PR, documento), USER-ATTESTED (el usuario lo afirma y puede
-defenderlo), PENDIENTE (se retira del CV hasta tener una de las dos). Marca aparte lo que
+defenderlo), ESTIMADO (el usuario lo estima con método; va como aproximado, "~N" o rango,
+y se marca para confirmar), PENDIENTE (se retira del CV). Marca aparte lo que
 el entrevistador va a sondear (lo técnico y lo cuantitativo).
 
 ## 6. Alcance y lenguaje de impacto

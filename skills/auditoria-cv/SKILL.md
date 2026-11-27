@@ -75,9 +75,16 @@ usuario ya respondió algo en su mensaje, no lo repitas.
 
 ### Fase 1 - Insumos
 
-Pide el CV actual (PDF o DOCX; el que realmente envía). En modo oferta, la oferta
-completa (enlace o texto); guarda el texto como `vacante.txt`. Opcional: LinkedIn como
-texto, portafolio, repos. No audites de memoria ni a partir de una descripción verbal.
+Pregunta primero si tiene un **perfil maestro** (`perfil-<nombre>.md`) de una sesión
+anterior. Si lo tiene, léelo: es la fuente de verdad, y en la Fase 5 solo preguntas lo
+que falte para este rol u oferta.
+
+Pide el CV actual, el que realmente envía. Acepta PDF, DOCX, imagen (foto o captura:
+PNG, JPG, WEBP), TXT o Markdown. Si es .doc, .odt o .pages, pide que lo exporte a PDF o
+DOCX. En modo oferta, la oferta completa (enlace o texto); guarda el texto como
+`vacante.txt`. Opcional: LinkedIn como texto, portafolio, repos. No audites de memoria ni
+a partir de una descripción verbal; si el usuario no tiene CV, la entrevista de la Fase 5
+construye el perfil maestro desde cero y la Fase 2 se salta.
 
 ### Fase 2 - Diagnóstico mecánico
 
@@ -90,11 +97,14 @@ cuadros de texto, texto blanco u oculto, contacto en encabezado o pie). Cubre ad
 PDF-imagen, contacto, fechas, secciones estándar, bullets con alcance y cobertura de
 términos.
 
-- **`[BLOQUEANTE] PDF-imagen`**: el ATS extrae cero palabras. Díselo y sigue, porque
-  igual vas a reconstruir el documento.
+- **`[BLOQUEANTE]` imagen o PDF escaneado**: el ATS extrae cero palabras. Díselo y
+  sigue, porque igual vas a reconstruir el documento. El script deja cada página como
+  PNG (`<archivo>.pN.png`; en un DOCX, `<archivo>.imgN.*`; con una imagen, el propio archivo): **léelas tú y transcribe
+  el contenido** a `cv-transcrito.md` antes de seguir. Marca lo ilegible como `<?>` y
+  pregúntalo en la Fase 5; no adivines cifras ni fechas borrosas.
 - Lee el `.ats.txt` completo: ¿nombre y cargo pegados?, ¿barra lateral intercalada?,
   ¿fechas huérfanas? Cita los fragmentos rotos textualmente.
-- Triaje visual: mira `CV.p1.png` (lo genera `--png` con un PDF). En el tercio
+- Triaje visual: mira `CV.pdf.p1.png` (lo genera `--png` con un PDF). En el tercio
   superior, ¿queda claro quién es, qué hace y para qué rol sirve?
 
 ### Fase 3 - Investigación externa
@@ -133,7 +143,13 @@ Pregunta lo que solo el usuario sabe, priorizado por impacto (ver
 `references/entrevista.md`): periodos (mes/año), títulos oficiales, métricas y alcance
 por bullet, experiencia real con cada requisito ausente o parcial, certificaciones,
 pausas. Como mucho 5 preguntas por turno; repite hasta cubrir lo importante o hasta que
-el usuario diga que no tiene más datos. Cada respuesta entra al registro de evidencia.
+el usuario diga que no tiene más datos. Cada respuesta entra al registro de evidencia
+con su estado.
+
+Al terminar, escribe o actualiza el **perfil maestro** con la forma de
+`assets/perfil-maestro.md` en la carpeta de trabajo del usuario: todo lo que contó,
+también lo que no entra en este CV, con su estado y fuente. Díselo en una línea: la
+próxima vez lo adjunta y te ahorras preguntas.
 
 ### Fase 6 - Reescritura
 
@@ -166,17 +182,25 @@ Parte de `assets/cv-ats-base.md`. Reglas de redacción en `references/redaccion.
 3. **Informe** breve con la estructura de `references/plantilla-informe.md`: cambios
    QUITAR / CAMBIAR / MEJORAR / AÑADIR con original y reemplazo, registro de evidencia,
    brechas reales y respuestas sugeridas para las preguntas del formulario.
-4. Si el usuario pide otro formato (Google Docs, LaTeX, versión con diseño, carta de
-   presentación, LinkedIn con `references/linkedin-2026.md`), hazlo aparte. La versión
-   con diseño sirve para referidos o entrega en mano, nunca para el portal.
+4. **Perfil maestro** actualizado (`perfil-<nombre>.md`).
+5. Ofrece en una línea los extras de `references/extras.md`: **carta de presentación**
+   y **preparación de entrevista** (preguntas probables desde el registro de evidencia y
+   las brechas, con puntos STAR). Solo si los pide.
+6. Si pide otro formato (Google Docs, LaTeX, versión con diseño, LinkedIn con
+   `references/linkedin-2026.md`), hazlo aparte. La versión con diseño sirve para
+   referidos o entrega en mano, nunca para el portal.
 
 ## Reglas de honestidad
 
 - **Sin métricas inventadas.** Si no hay cifra, usa alcance verificable o deja `<N>`
   para que el usuario lo complete. Nada de números redondos estimados por ti.
-- **Registro de evidencia**: cada cifra y herramienta del CV nuevo tiene fuente
-  (VERIFICADO) o la afirma el usuario y puede defenderla en voz alta (USER-ATTESTED).
-  Sin una de las dos, no entra.
+- **Registro de evidencia**: cada cifra y herramienta del CV nuevo tiene un estado:
+  - VERIFICADO: enlace, documento o carta.
+  - USER-ATTESTED: el usuario la afirma con certeza y puede defenderla en voz alta.
+  - ESTIMADO: el usuario la estima con un método que sabe explicar ("unos 40 tickets
+    al día según el tablero"). Entra solo como aproximado ("~40", "30-40") y la anotas
+    para confirmar. La estimación es del usuario, nunca tuya.
+  - PENDIENTE: falta el dato. No entra; usa alcance o `<N>`.
 - **No inflar** títulos, fechas ni niveles. Se describe el alcance real con el título
   oficial. No se esconden fechas para tapar huecos.
 - **Nada oculto**: ni texto blanco, ni palabras en márgenes, ni instrucciones a un LLM.
@@ -198,4 +222,6 @@ Parte de `assets/cv-ats-base.md`. Reglas de redacción en `references/redaccion.
 - `references/redaccion.md`: bullets, verbos, alcance, resumen
 - `references/plantilla-informe.md`: estructura del informe
 - `references/linkedin-2026.md`: perfil de LinkedIn (opcional)
+- `references/extras.md`: carta de presentación y preparación de entrevista (opcional)
 - `assets/cv-ats-base.md`: esqueleto de CV a prueba de parser
+- `assets/perfil-maestro.md`: inventario reutilizable de la entrevista

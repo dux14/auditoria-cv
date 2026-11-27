@@ -67,7 +67,7 @@ def test_pdf_y_png(tmp_path):
     assert r["inventario"]["paginas"] == 1 and r["inventario"]["fuentes"] >= 1
     assert not r["es_pdf_imagen"] and not r["columnas"]["multicolumna"]
     assert r["campos"]["email"] == ["ana@example.com"]
-    assert (tmp_path / "cv.p1.png").stat().st_size > 1000
+    assert (tmp_path / "cv.pdf.p1.png").stat().st_size > 1000
 
 
 MC = "http://schemas.openxmlformats.org/markup-compatibility/2006"
