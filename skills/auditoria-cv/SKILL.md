@@ -1,10 +1,10 @@
 ---
 name: auditoria-cv
-description: "Entrevista al usuario y reescribe su CV / hoja de vida / currículum / resume en dos modos: (1) un CV genérico fuerte para un tipo de rol, o (2) un CV a medida de una oferta concreta. Pregunta el enfoque, pide el CV actual, diagnostica qué extrae un ATS (PDF-imagen, columnas, tablas, texto oculto), investiga en la web la oferta, la empresa y el rol, cruza requisitos contra el perfil, pregunta métricas, periodos y alcance reales, y entrega el CV nuevo en DOCX y PDF con un informe QUITAR / CAMBIAR / MEJORAR / AÑADIR. Alineado a cómo se filtra hoy: preguntas eliminatorias, parseo, búsqueda y ranking con IA (p. ej. Workday HiredScore) y triaje humano. Úsala SIEMPRE que el usuario mencione CV, hoja de vida, currículum, resume, ATS, filtros automáticos, postular a una oferta, adaptar el CV a una vacante, LinkedIn o 'por qué no me llaman', aunque no pida una 'auditoría'."
+description: "Entrevista al usuario y reescribe su CV / hoja de vida / currículum / resume en dos modos: (1) un CV genérico fuerte para un tipo de rol, o (2) un CV a medida de una oferta concreta. Pregunta el enfoque, pide el CV actual (PDF, DOCX, foto o texto), diagnostica qué extrae un ATS (PDF-imagen, columnas, tablas, texto oculto), investiga en la web la oferta, la empresa y el rol, cruza requisitos contra el perfil, pregunta métricas, periodos y alcance reales, y entrega el CV nuevo en DOCX y PDF con un informe QUITAR / CAMBIAR / MEJORAR / AÑADIR y un perfil maestro reutilizable; opcional: carta de presentación y preparación de entrevista. Alineado a cómo se filtra hoy: preguntas eliminatorias, parseo, búsqueda y ranking con IA (p. ej. Workday HiredScore) y triaje humano. Úsala SIEMPRE que el usuario mencione CV, hoja de vida, currículum, resume, ATS, filtros automáticos, postular a una oferta, adaptar el CV a una vacante, LinkedIn o 'por qué no me llaman', aunque no pida una 'auditoría'."
 license: MIT
 ---
 
-# Auditoría y reescritura de CV (edición 2026-11)
+# Auditoría y reescritura de CV (edición 2026-12)
 
 ## Qué hace
 

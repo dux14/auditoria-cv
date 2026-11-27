@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026.12 - 2026-11-27
+
+- Perfil maestro (`assets/perfil-maestro.md`): la entrevista queda guardada y el siguiente CV solo pregunta lo que falte.
+- Extras opcionales (`references/extras.md`): carta de presentación y preparación de entrevista desde el registro de evidencia.
+- Estado ESTIMADO en el registro de evidencia: cifras que el usuario estima con método, solo como aproximadas.
+- Insumos: imágenes (foto o captura), TXT/MD, PDF escaneado y DOCX con el CV pegado como imagen; se exportan las páginas para transcribirlas.
+- La entrevista no avanza a la reescritura con requisitos duros sin preguntar; se avisa si la oferta ya cerró.
+- `parse_check.py`: el texto blanco sobre un fondo oscuro ya no se marca como oculto; sin ruido de pdfminer; menos relleno en inglés al comparar con la vacante.
+- Batería E2E de 44 pruebas con PDF, DOCX, imágenes, texto y casos límite (cifrados, corruptos, no latinos, rutas con espacios, Letter).
+
 ## 2026.11 - 2026-11-27
 
 - Flujo de entrevista en fases: enfoque, insumos, diagnóstico, investigación web de la oferta o el rol, mapa de brechas, preguntas de evidencia (métricas, periodos, alcance) y entrega.
