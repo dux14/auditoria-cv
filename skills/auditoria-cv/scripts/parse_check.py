@@ -4,7 +4,7 @@
 # dependencies = ["pdfplumber>=0.11", "python-docx>=1.1"]
 # ///
 """
-parse_check.py — Diagnostico de parseabilidad de un CV en PDF o DOCX.
+parse_check.py — Diagnostico de parseabilidad de un CV en PDF, DOCX, imagen (PNG/JPG/WEBP/GIF) o texto (TXT/MD).
 
 Simula lo que un ATS extrae realmente del documento y detecta las fallas
 que hacen que un CV quede invisible: PDF-imagen, doble columna, tablas,
@@ -72,15 +72,20 @@ def imagenes_docx(path, base):
     """Extrae las imagenes incrustadas de un DOCX (CV pegado como imagen) para transcribirlas."""
     import zipfile
     rutas = []
+    def orden(n):  # image2 antes que image10
+        return [int(t) if t.isdigit() else t for t in re.split(r"(\d+)", n)]
     with zipfile.ZipFile(path) as z:
-        for i, nombre in enumerate(sorted(n for n in z.namelist() if n.startswith("word/media/")), 1):
+        medios = [n for n in z.namelist() if n.startswith("word/media/") and not n.endswith("/")
+                  and os.path.splitext(n)[1].lower() in IMAGENES]  # .emf/.wmf: el modelo no los lee
+        for i, nombre in enumerate(sorted(medios, key=orden), 1):
             ruta = f"{base}.img{i}{os.path.splitext(nombre)[1]}"
             with open(ruta, "wb") as f:
                 f.write(z.read(nombre))
             rutas.append(ruta)
     return rutas
 
-IMAGENES = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".tif", ".tiff", ".heic"}
+IMAGENES = {".png", ".jpg", ".jpeg", ".webp", ".gif"}  # las que un modelo con vision puede leer
+CONVERTIR = {".heic", ".heif", ".tif", ".tiff", ".bmp"}
 TEXTO = {".txt", ".md"}
 EXPORTAR = {".doc", ".odt", ".pages", ".rtf"}
 
@@ -220,41 +225,29 @@ def detectar_tablas(path):
                 pass
     return {"tablas": total}
 
-def luminancia(col):
-    """0 = negro, 1 = blanco. Gris (1 valor), RGB (3) o CMYK (4). None si no se puede leer."""
-    if col is None:
-        return None
-    if isinstance(col, (int, float)):
-        col = [col]
-    try:
-        v = [float(c) for c in col]
-    except Exception:
-        return None
-    if len(v) == 1:
-        return v[0]
-    if len(v) == 3:
-        return 0.299 * v[0] + 0.587 * v[1] + 0.114 * v[2]
-    if len(v) == 4:
-        return (1 - v[3]) * (1 - sum(v[:3]) / 3)
-    return None
-
 def detectar_texto_oculto(path):
-    """Texto casi blanco que NO esta sobre un fondo oscuro o una imagen = texto invisible,
-    bandera de keyword stuffing. Blanco sobre una barra lateral oscura es diseño, no trampa."""
+    """Texto que no se ve: se renderiza la pagina y se mide el contraste dentro del recuadro de
+    cada caracter. Sin contraste = invisible (blanco sobre blanco, sobre una imagen o un degradado
+    del mismo color, o tamano diminuto), sea cual sea el espacio de color. Blanco sobre una barra
+    oscura tiene contraste: es diseño, no trampa."""
+    from PIL import ImageStat
+    RES = 150
+    k = RES / 72
     sospechosos = 0
     with abrir_pdf(path) as pdf:
         for page in pdf.pages:
-            fondos = [(o["x0"], o["top"], o["x1"], o["bottom"]) for o in page.images]
-            for o in list(page.rects) + list(page.curves):
-                l = luminancia(o.get("non_stroking_color")) if o.get("fill") else None
-                if l is not None and l < 0.75:
-                    fondos.append((o["x0"], o["top"], o["x1"], o["bottom"]))
-            for ch in (page.chars or []):
-                l = luminancia(ch.get("non_stroking_color"))
-                if l is None or l <= 0.94 or not ch["text"].strip():
+            chars = [c for c in (page.chars or []) if c["text"].strip()]
+            if not chars:
+                continue
+            img = page.to_image(resolution=RES).original.convert("L")
+            W, H = img.size
+            for ch in chars:
+                caja = (max(0, int(ch["x0"] * k)), max(0, int(ch["top"] * k)),
+                        min(W, int(ch["x1"] * k) + 1), min(H, int(ch["bottom"] * k) + 1))
+                if caja[2] - caja[0] < 2 or caja[3] - caja[1] < 2:
+                    sospechosos += 1  # menos de ~1 pt: ilegible para una persona
                     continue
-                cx, cy = (ch["x0"] + ch["x1"]) / 2, (ch["top"] + ch["bottom"]) / 2
-                if not any(x0 <= cx <= x1 and t <= cy <= bt for x0, t, x1, bt in fondos):
+                if ImageStat.Stat(img.crop(caja)).stddev[0] < 6:  # caja uniforme: no hay trazo visible
                     sospechosos += 1
     return {"texto_oculto": sospechosos}
 
@@ -398,6 +391,8 @@ def main():
     es_docx, base = ext == ".docx", a.pdf  # base: los archivos derivados cuelgan del nombre completo
     if ext in EXPORTAR:
         sys.exit(f"Formato {ext}: pide al usuario que lo exporte a PDF o DOCX desde su editor.")
+    if ext in CONVERTIR:
+        sys.exit(f"Imagen {ext}: pide al usuario que la exporte como PNG o JPG (captura o 'Guardar como').")
     if ext in IMAGENES:
         r = {"archivo": os.path.basename(a.pdf), "es_pdf_imagen": True, "formato": "imagen",
              "transcribir": [a.pdf]}
@@ -419,6 +414,9 @@ def main():
     transcribir = []
     if ext in TEXTO:
         raw = open(a.pdf, encoding="utf-8-sig", errors="replace").read()
+        if ext == ".md":  # quita marcas de Markdown que no son contenido
+            raw = "\n".join(re.sub(r"\*\*|__", "", l.lstrip("#").strip()) if not l.lstrip().startswith(("- ", "* "))
+                            else l for l in raw.splitlines())
         layout = raw
         inv = {"paginas": None, "fuentes": 1, "imagenes": 0,
                "kb": round(os.path.getsize(a.pdf) / 1024, 1), "encabezado_pie": ""}
@@ -430,7 +428,7 @@ def main():
         inv, raw, col, tab, oculto = leer_docx(a.pdf)
         layout = raw
         escaneado = len(raw.strip()) < 100
-        if escaneado:
+        if escaneado or (inv["imagenes"] and len(raw.strip()) < 400):
             transcribir = imagenes_docx(a.pdf, base)
     else:
         inv = inventario(a.pdf)
@@ -438,6 +436,8 @@ def main():
         escaneado = inv["fuentes"] == 0 or len(raw.strip()) < 100
         if escaneado:
             transcribir = png_paginas(a.pdf, base, 10)  # shortcut: max 10 paginas; un CV no deberia tener mas
+            if inv["paginas"] > 10:
+                print(f"Aviso: el PDF tiene {inv['paginas']} paginas; solo se exportan las 10 primeras.")
         elif a.png:
             png = png_paginas(a.pdf, base, 1)[0]
             print(f"Pagina 1 guardada en: {png}")
@@ -481,19 +481,28 @@ def main():
               "campos": cmp_, "impacto": imp})
 
     print("\n--- CAPA 1: LAYOUT ---")
-    if col.get("multicolumna"):
+    if ext in TEXTO:
+        print("n/d: texto plano, sin layout que revisar.")
+    if transcribir:
+        print(f"[RIESGO] El DOCX tiene poco texto y {len(transcribir)} imagen(es): parte del CV puede estar")
+        print("  pegado como imagen, que el ATS no lee. Transcribe y revisa:")
+        for t in transcribir:
+            print(f"    {t}")
+    if ext in TEXTO:
+        pass
+    elif col.get("multicolumna"):
         print(f"[GRAVE] Multicolumna en pagina(s) {col['paginas_afectadas']}.")
         print(f"  {col['detalle']}")
     else:
         print("[OK] Una sola columna.")
     if tab["tablas"]:
         print(f"[RIESGO] {tab['tablas']} tabla(s) detectada(s). Verifica en el .ats.txt si el orden se conserva (una cuadricula simple suele parsear bien; un layout con tablas no).")
-    else:
+    elif ext not in TEXTO:
         print("[OK] Sin tablas.")
     if oculto["texto_oculto"]:
-        print(f"[CRITICO] {oculto['texto_oculto']} caracteres blancos u ocultos (posible keyword stuffing).")
+        print(f"[CRITICO] {oculto['texto_oculto']} caracteres invisibles (sin contraste, ocultos o diminutos): posible keyword stuffing.")
         print("  Los filtros con LLM y los reclutadores lo ven; es riesgo reputacional. Eliminar.")
-    else:
+    elif ext not in TEXTO:
         print("[OK] Sin texto oculto.")
     if inv["encabezado_pie"]:
         print(f"[RIESGO] Texto en encabezado/pie: '{inv['encabezado_pie'][:80]}'. Algunos ATS lo omiten:")

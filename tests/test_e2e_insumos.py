@@ -340,3 +340,73 @@ def test_25_txt_vacio_no_habla_de_pdf(tmp_path):
     p = tmp_path / "vacio.txt"; p.write_text("hola")
     _, out = pc(p)
     assert "BLOQUEANTE" in out and "PDF" not in out.split("BLOQUEANTE", 1)[1].splitlines()[0]
+
+
+# ---------- regresiones de la revisión v2026.12 ----------
+
+def test_26_blanco_sobre_imagen_blanca_es_oculto(pdf_de, png_de):
+    """Burla: imagen blanca de fondo a pagina completa + texto blanco encima."""
+    blanca = png_de('<html><body style="background:#fff;margin:0"></body></html>', "blanca.png")
+    import base64
+    b64 = base64.b64encode(blanca.read_bytes()).decode()
+    html = doc_html(f'<div style="position:relative"><img src="data:image/png;base64,{b64}" '
+                    'style="position:absolute;top:0;left:0;width:100%;height:300px">'
+                    '<p style="position:relative;color:#fff">kubernetes snowflake terraform</p></div>'
+                    + CUERPO.format(nombre="Ana Perez"))
+    r, out = pc(pdf_de(html))
+    assert r["oculto"]["texto_oculto"] >= len("kubernetessnowflaketerraform") and "CRITICO" in out
+
+
+def test_27_texto_diminuto_es_oculto(pdf_de):
+    r, _ = pc(pdf_de(cv_html() + '<p style="font-size:1px;color:#000">kubernetes snowflake</p>'))
+    assert r["oculto"]["texto_oculto"] > 0
+
+
+def test_28_texto_de_color_normal_no_es_oculto(pdf_de):
+    html = doc_html('<div style="background:linear-gradient(90deg,#123,#456);color:#eee;padding:10px">'
+                    'Ana Perez | ana@example.com</div><p style="color:#bbb">gris claro visible</p>'
+                    + CUERPO.format(nombre="Ana Perez"))
+    r, _ = pc(pdf_de(html))
+    assert r["oculto"]["texto_oculto"] == 0
+
+
+def test_29_docx_imagenes_raras(png_de, tmp_path):
+    import zipfile
+    doc = Document(); doc.add_paragraph("Ana Perez")
+    for _ in range(2):
+        doc.add_picture(str(png_de(cv_html(), "c.png")))
+    src = tmp_path / "raro.docx"; doc.save(src)
+    # anade una carpeta vacia y un .emf al paquete
+    with zipfile.ZipFile(src, "a") as z:
+        z.writestr("word/media/", ""); z.writestr("word/media/image10.emf", b"emf")
+    r, out = pc(src)
+    t = r["transcribir"]
+    assert t and all(pathlib.Path(x).suffix in (".png", ".jpeg", ".jpg") for x in t)
+    assert all(pathlib.Path(x).stat().st_size > 0 for x in t)
+
+
+def test_30_docx_captura_con_algo_de_texto(png_de, tmp_path):
+    doc = Document()
+    doc.add_paragraph("Ana Perez Garcia | ana.perez@example.com | +34 600 000 000 | Madrid, Espana | linkedin.com/in/anaperez")
+    doc.add_picture(str(png_de(cv_html(), "c.png")))
+    src = tmp_path / "captura.docx"; doc.save(src)
+    r, out = pc(src)
+    assert r["transcribir"] and "imagen" in out.lower()
+
+
+@pytest.mark.parametrize("ext", [".heic", ".tiff", ".bmp"])
+def test_31_imagenes_no_legibles(ext, tmp_path):
+    p = tmp_path / f"cv{ext}"; p.write_bytes(b"x" * 10)
+    r = correr(PC, p, ok=False)
+    assert r.returncode != 0 and ("PNG" in r.stderr or "JPG" in r.stderr)
+
+
+def test_32_md_con_marcas(tmp_path):
+    p = tmp_path / "cv.md"
+    p.write_text("# Ana Perez\n\nana@example.com | +34 600 000 000\n\n**Habilidades**\n\nSQL, Python\n\n"
+                 "## Experiencia\n\n- Built 12 dashboards for 80 people (Mar 2022 - Present)\n\n## Educacion\n\nBSc 2020\n"
+                 + "texto de relleno para superar el minimo de caracteres. " * 3)
+    r, out = pc(p)
+    assert r["campos"]["posible_nombre"] == "Ana Perez"
+    assert r["campos"]["secciones"]["habilidades"]
+    assert "Una sola columna" not in out

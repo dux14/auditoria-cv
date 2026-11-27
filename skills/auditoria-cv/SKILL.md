@@ -92,8 +92,9 @@ construye el perfil maestro desde cero y la Fase 2 se salta.
 uv run scripts/parse_check.py CV.pdf [--vacante vacante.txt] --json diag.json --png
 ```
 
-Acepta PDF o DOCX (el DOCX se analiza directo, como lo lee un ATS: tablas, columnas,
-cuadros de texto, texto blanco u oculto, contacto en encabezado o pie). Cubre además
+Acepta PDF, DOCX, imagen (PNG, JPG, WEBP, GIF) o texto (TXT, MD). El DOCX se analiza
+directo, como lo lee un ATS: tablas, columnas, cuadros de texto, texto oculto, contacto
+en encabezado o pie e imágenes pegadas. Cubre además
 PDF-imagen, contacto, fechas, secciones estándar, bullets con alcance y cobertura de
 términos.
 
@@ -104,7 +105,8 @@ términos.
   pregúntalo en la Fase 5; no adivines cifras ni fechas borrosas.
 - Lee el `.ats.txt` completo: ¿nombre y cargo pegados?, ¿barra lateral intercalada?,
   ¿fechas huérfanas? Cita los fragmentos rotos textualmente.
-- Triaje visual: mira `CV.pdf.p1.png` (lo genera `--png` con un PDF). En el tercio
+- Triaje visual: mira `CV.pdf.p1.png` (lo genera `--png` con un PDF con texto; en uno
+  escaneado las páginas salen siempre, hasta 10). En el tercio
   superior, ¿queda claro quién es, qué hace y para qué rol sirve?
 
 ### Fase 3 - Investigación externa
@@ -218,10 +220,14 @@ Parte de `assets/cv-ats-base.md`. Reglas de redacción en `references/redaccion.
   reescritura cosmética.
 - Los datos del usuario (CV, contacto, empleadores) se usan solo para esta tarea. No
   los pongas en búsquedas web: busca la oferta, la empresa y el rol, no a la persona.
+- **Archivos personales en local**: el perfil maestro, `cv-transcrito.md`, los `.ats.txt`
+  y los PNG de páginas contienen datos personales (y el perfil, salario y visa). Se
+  guardan en la carpeta de trabajo del usuario; dile que no los suba a repos ni a sitios
+  públicos. Si la carpeta es un repo git, sugiere ignorarlos.
 
 ## Archivos
 
-- `scripts/parse_check.py`: diagnóstico de PDF o DOCX (Fases 2 y 7)
+- `scripts/parse_check.py`: diagnóstico de PDF, DOCX, imagen o texto (Fases 2 y 7)
 - `scripts/build_cv.py`: Markdown a DOCX, HTML y PDF de una columna (Fase 7)
 - `references/ats-realidad.md`: qué filtra de verdad, con fechas y fuentes
 - `references/entrevista.md`: banco de preguntas por fase

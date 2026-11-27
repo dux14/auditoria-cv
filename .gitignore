@@ -2,3 +2,10 @@
 __pycache__/
 *.pyc
 *.skill
+# datos personales que genera la skill: nunca al repo
+perfil-*.md
+cv-transcrito.md
+*.ats.txt
+*.p[0-9]*.png
+*.img[0-9]*.*
+!skills/auditoria-cv/assets/perfil-maestro.md

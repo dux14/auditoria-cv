@@ -16,7 +16,7 @@ jobs:
         run: |
           pip install -q pdfplumber python-docx playwright pytest pypdf pillow
           python -m playwright install --with-deps chromium
-          pytest -q tests/
+          pytest -q -rs tests/
       - name: Build .skill (para claude.ai)
         run: |
           mkdir -p dist
