@@ -74,7 +74,7 @@ O copia `skills/auditoria-cv/` a la carpeta de skills de tu agente.
 Issues y pull requests son bienvenidos, sobre todo para actualizar datos o añadir mercados. Registra los cambios en `CHANGELOG.md` y corre las pruebas:
 
 ```bash
-uv run --with pdfplumber --with python-docx --with playwright --with pytest pytest tests/
+uv run -q --with pdfplumber --with python-docx --with playwright --with pytest --with pypdf --with pillow pytest -q tests/
 claude plugin validate .
 ```
 

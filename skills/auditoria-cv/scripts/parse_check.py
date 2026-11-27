@@ -272,7 +272,7 @@ def campos(texto):
     n = norm(t)
     encontrados = {}
     for clave, variantes in SECCIONES.items():
-        encontrados[clave] = any(re.search(r"^\s*" + re.escape(v) + r"\b", n, re.M) for v in variantes)
+        encontrados[clave] = any(re.search(r"^[\s#]*" + re.escape(v) + r"\b", n, re.M) for v in variantes)
     primeras = [l.strip() for l in t.splitlines() if l.strip()][:4]
     return {
         "email": RE_EMAIL.findall(t)[:2],
