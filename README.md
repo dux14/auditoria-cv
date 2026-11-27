@@ -1,5 +1,7 @@
 # auditoria-cv
 
+![Icono de auditoria-cv: hoja de CV con una lupa y una marca de verificación](.claude-plugin/icon.png)
+
 Skill de Claude que te entrevista y reescribe tu CV (hoja de vida, currículum, resume) en dos modos:
 
 1. **CV genérico**: un CV fuerte para un tipo de rol y mercado, comparado contra ofertas reales y recientes.

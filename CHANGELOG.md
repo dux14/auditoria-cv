@@ -2,7 +2,7 @@
 
 ## 2026.12.1 - 2026-11-27
 
-- Preparación para el directorio de Anthropic: `version` en `plugin.json` y dependencias fijadas a versiones exactas.
+- Preparación para el directorio de Anthropic: `version` en `plugin.json`, dependencias fijadas a versiones exactas e icono (`.claude-plugin/icon.png`).
 
 ## 2026.12 - 2026-11-27
 
