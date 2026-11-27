@@ -1,29 +1,26 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.9"
+# dependencies = ["pdfplumber>=0.11", "python-docx>=1.1"]
+# ///
 """
-parse_check.py — Diagnostico de parseabilidad de un CV en PDF.
+parse_check.py — Diagnostico de parseabilidad de un CV en PDF o DOCX.
 
 Simula lo que un ATS extrae realmente del documento y detecta las fallas
 que hacen que un CV quede invisible: PDF-imagen, doble columna, tablas,
 texto oculto, contacto no detectable, bullets sin metricas.
 
-Uso:
-    python3 parse_check.py CV.pdf [--vacante vacante.txt] [--json salida.json]
+Uso (uv instala las dependencias solo; sin uv: pip install pdfplumber python-docx):
+    uv run parse_check.py CV.pdf|CV.docx [--vacante vacante.txt] [--json salida.json] [--png]
 
 Salida: informe legible en stdout (+ JSON opcional).
 El texto crudo extraido se guarda junto al PDF como <nombre>.ats.txt
 """
 
-import argparse, json, os, re, shutil, subprocess, sys
+import argparse, json, os, re, sys
 from collections import Counter
 
 # ---------- utilidades ----------
-
-def sh(cmd):
-    try:
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-        return r.stdout
-    except Exception:
-        return ""
 
 def norm(s):
     s = s.lower()
@@ -35,23 +32,68 @@ def norm(s):
 # ---------- capa 0: el documento ----------
 
 def inventario(path):
-    out = {}
-    info = sh(["pdfinfo", path])
-    m = re.search(r"Pages:\s+(\d+)", info)
-    out["paginas"] = int(m.group(1)) if m else None
-    fonts = sh(["pdffonts", path])
-    lineas_fuente = [l for l in fonts.splitlines()[2:] if l.strip()]
-    out["fuentes"] = len(lineas_fuente)
-    imgs = sh(["pdfimages", "-list", path])
-    out["imagenes"] = max(0, len([l for l in imgs.splitlines()[2:] if l.strip()]))
-    out["kb"] = round(os.path.getsize(path) / 1024, 1)
-    return out
+    import pdfplumber
+    with pdfplumber.open(path) as pdf:
+        return {"paginas": len(pdf.pages),
+                "fuentes": len({c.get("fontname") for p in pdf.pages for c in p.chars}),
+                "imagenes": sum(len(p.images) for p in pdf.pages),
+                "kb": round(os.path.getsize(path) / 1024, 1),
+                "encabezado_pie": ""}
 
 def texto_ats(path):
-    """Lo que el parser lee: orden de flujo (raw) vs. orden visual (layout)."""
-    raw = sh(["pdftotext", "-raw", path, "-"])
-    layout = sh(["pdftotext", "-layout", path, "-"])
+    """Lo que el parser lee: orden de flujo (raw) vs. orden visual (layout). Paginas separadas por \f."""
+    import pdfplumber
+    with pdfplumber.open(path) as pdf:
+        raw = "\f".join(p.extract_text(use_text_flow=True) or "" for p in pdf.pages)
+        layout = "\f".join(p.extract_text(layout=True) or "" for p in pdf.pages)
     return raw, layout
+
+def png_pagina1(path, salida):
+    import pdfplumber
+    with pdfplumber.open(path) as pdf:
+        pdf.pages[0].to_image(resolution=110).save(salida)
+
+# ---------- DOCX: los ATS lo leen directo, sin pasar por PDF ----------
+
+def leer_docx(path):
+    """Devuelve (inv, raw, col, tab, oculto) con la misma forma que el camino PDF."""
+    from docx import Document
+    from docx.oxml.ns import qn
+    doc = Document(path)
+    body = doc.element.body
+    W = lambda tag: qn("w:" + tag)
+    lineas, ocultos = [], 0
+    for p in body.iter(W("p")):  # orden del documento, incluye tablas y cuadros de texto
+        texto = "".join(t.text or "" for t in p.iter(W("t")))
+        if not texto.strip():
+            continue
+        ppr = p.find(W("pPr"))
+        estilo = ppr.find(W("pStyle")) if ppr is not None else None
+        es_lista = ppr is not None and (ppr.find(W("numPr")) is not None or
+                   (estilo is not None and "List" in (estilo.get(W("val")) or "")))
+        lineas.append(("- " if es_lista else "") + texto)
+        for r in p.iter(W("r")):
+            rpr = r.find(W("rPr"))
+            if rpr is None:
+                continue
+            color = rpr.find(W("color"))
+            blanco = color is not None and (color.get(W("val")) or "").upper() in ("FFFFFF", "FEFEFE", "FDFDFD")
+            if blanco or rpr.find(W("vanish")) is not None:
+                ocultos += sum(len(t.text or "") for t in r.iter(W("t")))
+    cajas = len(list(body.iter(W("txbxContent"))))
+    multicol = any(int(c.get(W("num")) or 1) > 1 for c in body.iter(W("cols")))
+    enc_pie = " | ".join(p.text for s in doc.sections for hf in (s.header, s.footer)
+                         for p in hf.paragraphs if p.text.strip())
+    detalle = []
+    if multicol:
+        detalle.append("La seccion del documento tiene varias columnas (Formato > Columnas).")
+    if cajas:
+        detalle.append(f"{cajas} cuadro(s) de texto: muchos ATS los omiten o los leen fuera de orden.")
+    inv = {"paginas": None, "fuentes": 1, "imagenes": len(doc.inline_shapes),
+           "kb": round(os.path.getsize(path) / 1024, 1), "encabezado_pie": enc_pie}
+    col = {"multicolumna": bool(multicol or cajas), "paginas_afectadas": ["docx"],
+           "detalle": " ".join(detalle)}
+    return inv, "\n".join(lineas), col, {"tablas": len(doc.tables)}, {"texto_oculto": ocultos}
 
 # ---------- capa 1: layout que rompe el parsing ----------
 
@@ -258,23 +300,35 @@ def match_vacante(cv_texto, vacante_texto, top=30):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("pdf")
+    ap.add_argument("pdf", help="CV en .pdf o .docx")
     ap.add_argument("--vacante", help="archivo .txt con la descripcion de la vacante")
     ap.add_argument("--json", help="ruta para volcar el resultado en JSON")
+    ap.add_argument("--png", action="store_true", help="guarda la pagina 1 como <nombre>.p1.png (triaje visual, solo PDF)")
     a = ap.parse_args()
 
     if not os.path.isfile(a.pdf):
         sys.exit(f"No existe el archivo: {a.pdf}")
-    # Sin poppler, sh() devuelve "" y todo CV pareceria PDF-imagen: falso bloqueante.
-    faltan = [t for t in ("pdftotext", "pdfinfo", "pdffonts") if not shutil.which(t)]
-    if faltan:
-        sys.exit("Faltan herramientas de poppler: " + ", ".join(faltan) +
-                 ". Instala con `brew install poppler` (macOS) o "
-                 "`apt install poppler-utils` (Linux).")
+    es_docx = a.pdf.lower().endswith(".docx")
+    if not es_docx and not a.pdf.lower().endswith(".pdf"):
+        sys.exit("Formato no soportado: usa .pdf o .docx (convierte .doc/.pages a uno de ellos).")
+    try:
+        import pdfplumber, docx  # noqa: F401
+    except ImportError:
+        sys.exit("Faltan dependencias. Corre con `uv run parse_check.py ...` o instala: "
+                 "pip install pdfplumber python-docx")
 
-    inv = inventario(a.pdf)
-    raw, layout = texto_ats(a.pdf)
-    escaneado = inv["fuentes"] == 0 or len(raw.strip()) < 100
+    if es_docx:
+        inv, raw, col, tab, oculto = leer_docx(a.pdf)
+        layout = raw
+        escaneado = len(raw.strip()) < 100
+    else:
+        inv = inventario(a.pdf)
+        raw, layout = texto_ats(a.pdf)
+        escaneado = inv["fuentes"] == 0 or len(raw.strip()) < 100
+        if a.png:
+            png = os.path.splitext(a.pdf)[0] + ".p1.png"
+            png_pagina1(a.pdf, png)
+            print(f"Pagina 1 guardada en: {png}")
 
     r = {"archivo": os.path.basename(a.pdf), "inventario": inv, "es_pdf_imagen": escaneado}
 
@@ -293,9 +347,10 @@ def main():
             json.dump(r, open(a.json, "w"), ensure_ascii=False, indent=2)
         return
 
-    col = detectar_columnas(a.pdf)
-    tab = detectar_tablas(a.pdf)
-    oculto = detectar_texto_oculto(a.pdf)
+    if not es_docx:
+        col = detectar_columnas(a.pdf)
+        tab = detectar_tablas(a.pdf)
+        oculto = detectar_texto_oculto(a.pdf)
     cmp_ = campos(raw)
     imp = impacto(layout)
     r.update({"columnas": col, "tablas": tab, "oculto": oculto,
@@ -312,10 +367,13 @@ def main():
     else:
         print("[OK] Sin tablas.")
     if oculto["texto_oculto"]:
-        print(f"[CRITICO] {oculto['texto_oculto']} caracteres casi blancos (posible keyword stuffing oculto).")
+        print(f"[CRITICO] {oculto['texto_oculto']} caracteres blancos u ocultos (posible keyword stuffing).")
         print("  Los filtros con LLM y los reclutadores lo ven; es riesgo reputacional. Eliminar.")
     else:
         print("[OK] Sin texto oculto.")
+    if inv["encabezado_pie"]:
+        print(f"[RIESGO] Texto en encabezado/pie: '{inv['encabezado_pie'][:80]}'. Algunos ATS lo omiten:")
+        print("  el contacto debe estar tambien en el cuerpo del documento.")
     if inv["imagenes"] > 2:
         print(f"[RIESGO] {inv['imagenes']} imagenes. Iconos/barras de nivel no aportan texto al parser.")
 
@@ -349,7 +407,7 @@ def main():
 
     txt_out = os.path.splitext(a.pdf)[0] + ".ats.txt"
     with open(txt_out, "w", encoding="utf-8") as f:
-        # pdftotext separa paginas con un salto de formulario invisible; se hace visible
+        # las paginas van separadas con un salto de formulario invisible; se hace visible
         # para que una linea no parezca pegada a la siguiente al cruzar de pagina.
         pagina = "\n--- salto de pagina ---\n"
         f.write("=== ORDEN DE FLUJO (lo que lee el parser) ===\n" + raw.replace("\f", pagina) +

@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.9"
+# dependencies = ["python-docx>=1.1", "playwright>=1.45"]
+# ///
 """
-build_cv.py - Convierte un CV en Markdown simple a DOCX y HTML de una columna (ATS-seguro).
+build_cv.py - Convierte un CV en Markdown simple a DOCX, HTML y PDF de una columna (ATS-seguro).
 
-Uso:
-    uv run --with python-docx scripts/build_cv.py cv.md      # o: pip install python-docx
-Genera cv.docx y cv.html junto al .md. Para el PDF:
-    soffice --headless --convert-to pdf cv.docx              # si hay LibreOffice
-    "<chrome>" --headless --no-pdf-header-footer --print-to-pdf=cv.pdf cv.html   # si no
+Uso (uv instala las dependencias solo; sin uv: pip install python-docx playwright):
+    uv run scripts/build_cv.py cv.md [--letter] [--sin-pdf]   # --letter: EE.UU./Canadá; por defecto A4
+Genera cv.docx, cv.html y cv.pdf junto al .md. El PDF se imprime con Chromium vía
+Playwright; si Chromium no está, se descarga una vez (~150 MB, sin permisos de admin).
 
 Markdown aceptado (lo que produce assets/cv-ats-base.md):
     primera línea = nombre; líneas antes del primer "## " = contacto;
@@ -14,7 +17,7 @@ Markdown aceptado (lo que produce assets/cv-ats-base.md):
     el resto, párrafo. Negrita en línea se quita.
     shortcut: cada línea es un párrafo (no une líneas partidas); escribe cada párrafo en una línea.
 """
-import html, pathlib, re, sys
+import html, pathlib, re, subprocess, sys
 
 from docx import Document
 from docx.shared import Pt
@@ -73,10 +76,30 @@ def a_html(bs, ruta):
                     encoding="utf-8")
 
 
+def a_pdf(html_path, pdf_path, formato="A4"):
+    from playwright.sync_api import sync_playwright, Error
+    def imprimir():
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            pg = b.new_page()
+            pg.goto(html_path.resolve().as_uri())
+            pg.pdf(path=str(pdf_path), format=formato, print_background=False)
+            b.close()
+    try:
+        imprimir()
+    except Error as e:
+        if "Executable doesn't exist" not in str(e):
+            raise
+        print("Instalando Chromium para generar el PDF (una sola vez)...", file=sys.stderr)
+        subprocess.run([sys.executable, "-m", "playwright", "install", "chromium"], check=True)
+        imprimir()
+
+
 def main():
-    if len(sys.argv) != 2:
-        sys.exit("Uso: build_cv.py cv.md")
-    src = pathlib.Path(sys.argv[1])
+    args = [x for x in sys.argv[1:] if x not in ("--sin-pdf", "--letter")]
+    if len(args) != 1:
+        sys.exit("Uso: build_cv.py cv.md [--letter] [--sin-pdf]")
+    src = pathlib.Path(args[0])
     if not src.is_file():
         sys.exit(f"No existe el archivo: {src}")
     bs = bloques(src.read_text(encoding="utf-8"))
@@ -84,7 +107,11 @@ def main():
         sys.exit("El Markdown está vacío.")
     a_docx(bs, src.with_suffix(".docx"))
     a_html(bs, src.with_suffix(".html"))
-    print(f"OK: {src.with_suffix('.docx')} y {src.with_suffix('.html')}")
+    hechos = [src.with_suffix(".docx"), src.with_suffix(".html")]
+    if "--sin-pdf" not in sys.argv:
+        a_pdf(src.with_suffix(".html"), src.with_suffix(".pdf"), "Letter" if "--letter" in sys.argv else "A4")
+        hechos.append(src.with_suffix(".pdf"))
+    print("OK: " + ", ".join(map(str, hechos)))
 
 
 if __name__ == "__main__":

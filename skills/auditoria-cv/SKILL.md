@@ -44,6 +44,24 @@ Si el usuario pide trucos (texto blanco, keyword stuffing, instrucciones ocultas
 LLM), explica que se detectan (≈1 % de CVs reales ya lo intentan y los sistemas y
 reclutadores lo buscan) y que dañan la candidatura. No lo hagas.
 
+## Herramientas: instálalas, no dependas de lo que haya
+
+Los scripts declaran sus dependencias (PEP 723) y solo necesitan Python 3.9+. Las rutas
+de `scripts/` son relativas a la carpeta de esta skill.
+
+1. Si existe `uv`, úsalo: `uv run scripts/<script>.py ...` instala todo en un entorno
+   aislado la primera vez.
+2. Si no existe, instálalo sin permisos de administrador: `python3 -m pip install --user uv`
+   y ejecuta con `python3 -m uv run scripts/<script>.py ...`.
+3. Si `pip` está bloqueado: `python3 -m pip install pdfplumber python-docx playwright`
+   y `python3 scripts/<script>.py ...`.
+4. Para el PDF, `build_cv.py` descarga Chromium (Playwright) la primera vez si no está.
+   Si la red lo impide y existe LibreOffice, `soffice --headless --convert-to pdf CV.docx`.
+
+No pidas al usuario que instale nada a mano salvo que todo lo anterior falle; en ese
+caso dile el comando exacto. Si no puedes ejecutar comandos (chat sin herramientas),
+haz el análisis leyendo el texto del archivo y dilo en el informe.
+
 ## Flujo
 
 Sigue las fases en orden. No saltes la entrevista: sin contexto, la reescritura es
@@ -64,22 +82,20 @@ texto, portafolio, repos. No audites de memoria ni a partir de una descripción 
 ### Fase 2 - Diagnóstico mecánico
 
 ```bash
-python3 scripts/parse_check.py CV.pdf [--vacante vacante.txt] --json diag.json
+uv run scripts/parse_check.py CV.pdf [--vacante vacante.txt] --json diag.json --png
 ```
 
-Si el CV es DOCX, conviértelo antes (`soffice --headless --convert-to pdf CV.docx`).
-El script cubre PDF-imagen, columnas, tablas, texto oculto, contacto, fechas, secciones
-estándar, bullets con alcance y cobertura de términos.
+Acepta PDF o DOCX (el DOCX se analiza directo, como lo lee un ATS: tablas, columnas,
+cuadros de texto, texto blanco u oculto, contacto en encabezado o pie). Cubre además
+PDF-imagen, contacto, fechas, secciones estándar, bullets con alcance y cobertura de
+términos.
 
 - **`[BLOQUEANTE] PDF-imagen`**: el ATS extrae cero palabras. Díselo y sigue, porque
   igual vas a reconstruir el documento.
 - Lee el `.ats.txt` completo: ¿nombre y cargo pegados?, ¿barra lateral intercalada?,
   ¿fechas huérfanas? Cita los fragmentos rotos textualmente.
-- Triaje visual: `pdftoppm -png -r 110 -f 1 -l 1 CV.pdf pag`. En el tercio superior,
-  ¿queda claro quién es, qué hace y para qué rol sirve?
-
-Si no puedes ejecutar comandos (p. ej. en el chat sin herramientas), haz el mismo
-análisis leyendo el texto extraído del archivo y dilo en el informe.
+- Triaje visual: mira `CV.p1.png` (lo genera `--png` con un PDF). En el tercio
+  superior, ¿queda claro quién es, qué hace y para qué rol sirve?
 
 ### Fase 3 - Investigación externa
 
@@ -138,15 +154,12 @@ Parte de `assets/cv-ats-base.md`. Reglas de redacción en `references/redaccion.
 1. **CV en DOCX** (el formato más seguro para portales) y **PDF**. Escribe el CV en
    Markdown con la forma de `assets/cv-ats-base.md` como `Nombre-Apellido-Rol.md` y:
    ```bash
-   uv run --with python-docx scripts/build_cv.py Nombre-Apellido-Rol.md   # o pip install python-docx
-   soffice --headless --convert-to pdf Nombre-Apellido-Rol.docx           # si hay LibreOffice
-   # si no: Chrome/Chromium headless sobre el .html generado
-   "<chrome>" --headless --no-pdf-header-footer --print-to-pdf=Nombre-Apellido-Rol.pdf Nombre-Apellido-Rol.html
+   uv run scripts/build_cv.py Nombre-Apellido-Rol.md            # A4
+   uv run scripts/build_cv.py Nombre-Apellido-Rol.md --letter   # EE.UU./Canadá
    ```
-   (`<chrome>` en macOS: `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`;
-   en Linux: `google-chrome` o `chromium`.) Si existe la skill `docx`, puedes usarla en su
-   lugar. Si no puedes generar archivos, entrega el texto completo listo para pegar en
-   una plantilla de una columna y dile cómo exportar a PDF desde Word o Google Docs.
+   Genera `.docx`, `.html` y `.pdf`. Si no puedes generar archivos, entrega el texto
+   completo listo para pegar en una plantilla de una columna y explica cómo exportar a
+   PDF desde Word o Google Docs.
 2. **Verificación**: corre `parse_check.py` sobre el PDF nuevo y muestra el antes y el
    después (contacto, fechas, secciones, cobertura de términos, bullets con alcance).
 3. **Informe** breve con la estructura de `references/plantilla-informe.md`: cambios
@@ -176,8 +189,8 @@ Parte de `assets/cv-ats-base.md`. Reglas de redacción en `references/redaccion.
 
 ## Archivos
 
-- `scripts/parse_check.py`: diagnóstico mecánico (Fases 2 y 7; requiere poppler)
-- `scripts/build_cv.py`: Markdown a DOCX y HTML de una columna (Fase 7)
+- `scripts/parse_check.py`: diagnóstico de PDF o DOCX (Fases 2 y 7)
+- `scripts/build_cv.py`: Markdown a DOCX, HTML y PDF de una columna (Fase 7)
 - `references/ats-realidad.md`: qué filtra de verdad, con fechas y fuentes
 - `references/entrevista.md`: banco de preguntas por fase
 - `references/mercados.md`: convenciones por país o región

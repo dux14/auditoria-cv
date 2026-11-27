@@ -1,4 +1,4 @@
-"""Prueba de build_cv.py. Correr: uv run --with python-docx --with pytest pytest tests/"""
+"""Prueba de build_cv.py. Correr: ver README (Contribuir)."""
 import pathlib, subprocess, sys
 
 from docx import Document
@@ -24,7 +24,7 @@ Data Analyst with **4 years** in retail.
 def test_md_a_docx_y_html(tmp_path):
     src = tmp_path / "cv.md"
     src.write_text(MD, encoding="utf-8")
-    subprocess.run([sys.executable, str(SCRIPT), str(src)], check=True)
+    subprocess.run([sys.executable, str(SCRIPT), str(src), "--sin-pdf"], check=True)
 
     doc = Document(tmp_path / "cv.docx")
     paras = [(p.style.name, p.text) for p in doc.paragraphs if p.text]

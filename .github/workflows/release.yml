@@ -14,7 +14,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Test
         run: |
-          pip install -q python-docx pytest
+          pip install -q pdfplumber python-docx playwright pytest
+          python -m playwright install --with-deps chromium
           pytest -q tests/
       - name: Build .skill (para claude.ai)
         run: |

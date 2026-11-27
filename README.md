@@ -30,7 +30,7 @@ Parte de cómo se filtra hoy: primero las preguntas eliminatorias del formulario
 
 **Activa las actualizaciones automáticas** (vienen apagadas por defecto en marketplaces de terceros): `/plugin` → *Marketplaces* → `auditoria-cv` → *Enable auto-update*. Así recibes cada cambio que se publique en este repo al iniciar Claude Code. Para actualizar a mano: `/plugin marketplace update auditoria-cv`.
 
-Para los scripts necesitas `poppler` (`brew install poppler` o `apt install poppler-utils`) y, para generar el DOCX, `uv` o `pip install python-docx`. El PDF se genera con LibreOffice o con Chrome.
+Solo necesitas Python 3.9+. La skill instala sola lo demás la primera vez: `uv` (con pip, sin permisos de administrador), las librerías (pdfplumber, python-docx y Playwright) y Chromium para el PDF. No hace falta poppler, LibreOffice ni pandoc.
 
 ### Claude (app o web)
 
@@ -59,8 +59,8 @@ O copia `skills/auditoria-cv/` a la carpeta de skills de tu agente.
 | `skills/auditoria-cv/SKILL.md` | Flujo y reglas |
 | `skills/auditoria-cv/references/` | Cómo filtran los ATS y la IA, preguntas de la entrevista, mercados, redacción, plantilla del informe y LinkedIn |
 | `skills/auditoria-cv/assets/cv-ats-base.md` | Esqueleto de CV a prueba de parser |
-| `skills/auditoria-cv/scripts/parse_check.py` | Diagnóstico de lo que extrae un ATS |
-| `skills/auditoria-cv/scripts/build_cv.py` | Markdown a DOCX y HTML de una columna |
+| `skills/auditoria-cv/scripts/parse_check.py` | Diagnóstico de lo que extrae un ATS (PDF o DOCX) |
+| `skills/auditoria-cv/scripts/build_cv.py` | Markdown a DOCX, HTML y PDF de una columna |
 | `.claude-plugin/` | Manifiestos de marketplace y plugin de Claude Code |
 
 ## Límites
@@ -74,7 +74,7 @@ O copia `skills/auditoria-cv/` a la carpeta de skills de tu agente.
 Issues y pull requests son bienvenidos, sobre todo para actualizar datos o añadir mercados. Registra los cambios en `CHANGELOG.md` y corre las pruebas:
 
 ```bash
-uv run --with python-docx --with pytest pytest tests/
+uv run --with pdfplumber --with python-docx --with playwright --with pytest pytest tests/
 claude plugin validate .
 ```
 

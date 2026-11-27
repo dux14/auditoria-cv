@@ -92,7 +92,7 @@ presenciales para verificar.
 - Fuentes, nombre de archivo, accesibilidad: sin datos creíbles. Convención: fuente de
   sistema 10-12 pt, `Nombre-Apellido-Rol.pdf`.
 - Enlaces: usa URL visibles en texto plano; los hipervínculos solo como anotación pueden
-  no sobrevivir a la extracción (verifica con `pdftotext`).
+  no sobrevivir a la extracción (verifica en el `.ats.txt` de `parse_check.py`).
 - Longitud: ver SKILL.md. ResumeGo (2018, simulación) y Jobscan (datos propios) son de
   proveedores.
 
@@ -124,8 +124,8 @@ presenciales para verificar.
 
 ## Herramientas de validación (qué confiar)
 
-1. `pdftotext -layout cv.pdf -` y también sin `-layout` (los parsers suelen leer por
-   filas). `pdffonts` para fuentes y páginas sin texto.
+1. `parse_check.py`: su `.ats.txt` trae el orden de flujo y el visual (los parsers suelen leer por
+   filas) y su conteo de fuentes delata páginas sin texto.
 2. Autorrelleno del portal real: revisa nombre, correo, fechas, cargos.
 3. Demo de un parser comercial (Affinda, Textkernel): mejor proxy disponible de un ATS.
 4. Revisión humana de un reclutador o par.
